@@ -15,7 +15,6 @@ namespace OOAD_Project.Domain
         public decimal Price { get; set; }
         public decimal Subtotal => Quantity * Price;
 
-        // Navigation properties
         public string ProductName { get; set; } = string.Empty;
 
         public OrderDetail() { }

@@ -38,7 +38,7 @@ namespace OOAD_Project
             txtPassword.BorderStyle = BorderStyle.None;
             AddBottomBorder(txtPassword);
 
-            this.AcceptButton = btnLogin; // Press Enter = Login
+            this.AcceptButton = btnLogin;
             AddEyeIcon();
         }
 

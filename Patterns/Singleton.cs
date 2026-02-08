@@ -6,29 +6,20 @@ using System.Text.Json;
 
 namespace OOAD_Project.Patterns
 {
-    /// <summary>
-    /// SINGLETON PATTERN - Secure Implementation
-    /// Reads connection string from appsettings.json instead of hardcoding
-    /// </summary>
     public sealed class DatabaseManager
     {
         #region Singleton Implementation
-
         private static DatabaseManager? _instance = null;
+
         private static readonly object _lock = new object();
+
         private readonly string _connectionString;
 
-        /// <summary>
-        /// Private constructor - loads connection string from config file
-        /// </summary>
         private DatabaseManager()
         {
             _connectionString = LoadConnectionString();
         }
 
-        /// <summary>
-        /// Thread-safe singleton instance
-        /// </summary>
         public static DatabaseManager Instance
         {
             get
@@ -46,26 +37,16 @@ namespace OOAD_Project.Patterns
                 return _instance;
             }
         }
-
         #endregion
 
         #region Configuration Loading
-
-        /// <summary>
-        /// Load connection string from appsettings.json
-        /// Falls back to default if file not found (for development)
-        /// </summary>
         private string LoadConnectionString()
         {
             try
             {
-                // Get the application directory
                 string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-
-                // ✅ CORRECT - Use relative path
                 string configPath = Path.Combine(baseDirectory, "appsettings.json");
 
-                // If not found in base directory, try project root
                 if (!File.Exists(configPath))
                 {
                     // Go up to find project root
@@ -93,7 +74,6 @@ namespace OOAD_Project.Patterns
                     }
                 }
 
-                // Config file not found - show warning
                 Console.WriteLine("[DatabaseManager] ⚠️ appsettings.json not found, using fallback connection");
                 System.Windows.Forms.MessageBox.Show(
                     "Configuration file 'appsettings.json' not found.\n\n" +
@@ -108,15 +88,11 @@ namespace OOAD_Project.Patterns
             {
                 Console.WriteLine($"[DatabaseManager] ❌ Error loading config: {ex.Message}");
             }
-
-            // ⚠️ FALLBACK - Only for local development
             return "Host=localhost;Port=5432;Username=postgres;Password=YOUR_PASSWORD;Database=postgres;";
         }
-
         #endregion
 
         #region Database Operations
-
         public NpgsqlConnection GetConnection()
         {
             return new NpgsqlConnection(_connectionString);

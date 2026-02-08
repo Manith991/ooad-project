@@ -607,7 +607,7 @@
             btnClearAll.BackColor = Color.FromArgb(255, 192, 192);
             btnClearAll.Font = new Font("Segoe UI", 10F);
             btnClearAll.ForeColor = Color.FromArgb(192, 0, 0);
-            btnClearAll.Location = new Point(628, 31);
+            btnClearAll.Location = new Point(673, 31);
             btnClearAll.Name = "btnClearAll";
             btnClearAll.Size = new Size(126, 49);
             btnClearAll.TabIndex = 1;
@@ -626,9 +626,9 @@
             panelRight.Controls.Add(label1);
             panelRight.Controls.Add(dgvItems);
             panelRight.Dock = DockStyle.Right;
-            panelRight.Location = new Point(1510, 146);
+            panelRight.Location = new Point(1465, 146);
             panelRight.Name = "panelRight";
-            panelRight.Size = new Size(783, 929);
+            panelRight.Size = new Size(828, 929);
             panelRight.TabIndex = 2;
             // 
             // lblUser
@@ -646,7 +646,7 @@
             btnRemove.BackColor = Color.FromArgb(255, 192, 128);
             btnRemove.Font = new Font("Segoe UI", 10F);
             btnRemove.ForeColor = Color.FromArgb(192, 64, 0);
-            btnRemove.Location = new Point(481, 31);
+            btnRemove.Location = new Point(526, 31);
             btnRemove.Name = "btnRemove";
             btnRemove.Size = new Size(126, 49);
             btnRemove.TabIndex = 4;
@@ -664,7 +664,7 @@
             panel1.Controls.Add(btnPay);
             panel1.Location = new Point(36, 648);
             panel1.Name = "panel1";
-            panel1.Size = new Size(718, 253);
+            panel1.Size = new Size(763, 253);
             panel1.TabIndex = 2;
             // 
             // btnPayQR
@@ -672,9 +672,9 @@
             btnPayQR.BackColor = Color.Blue;
             btnPayQR.Font = new Font("Segoe UI Semibold", 14F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnPayQR.ForeColor = Color.White;
-            btnPayQR.Location = new Point(365, 160);
+            btnPayQR.Location = new Point(389, 160);
             btnPayQR.Name = "btnPayQR";
-            btnPayQR.Size = new Size(312, 73);
+            btnPayQR.Size = new Size(330, 73);
             btnPayQR.TabIndex = 3;
             btnPayQR.Text = "QR";
             btnPayQR.UseVisualStyleBackColor = false;
@@ -684,7 +684,7 @@
             // 
             lbTotalPrice.AutoSize = true;
             lbTotalPrice.Font = new Font("Segoe UI Semibold", 16F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            lbTotalPrice.Location = new Point(543, 23);
+            lbTotalPrice.Location = new Point(619, 23);
             lbTotalPrice.Name = "lbTotalPrice";
             lbTotalPrice.Size = new Size(100, 45);
             lbTotalPrice.TabIndex = 2;
@@ -707,7 +707,7 @@
             btnPay.ForeColor = Color.White;
             btnPay.Location = new Point(38, 160);
             btnPay.Name = "btnPay";
-            btnPay.Size = new Size(312, 73);
+            btnPay.Size = new Size(330, 73);
             btnPay.TabIndex = 0;
             btnPay.Text = "Cash";
             btnPay.UseVisualStyleBackColor = false;
@@ -730,7 +730,7 @@
             dgvItems.BorderStyle = BorderStyle.None;
             dgvItems.CellBorderStyle = DataGridViewCellBorderStyle.None;
             dgvItems.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dataGridViewCellStyle2.BackColor = Color.Silver;
             dataGridViewCellStyle2.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
             dataGridViewCellStyle2.ForeColor = SystemColors.WindowText;
@@ -766,54 +766,59 @@
             dgvItems.RowHeadersWidth = 62;
             dgvItems.RowTemplate.Height = 60;
             dgvItems.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvItems.Size = new Size(718, 1012);
+            dgvItems.Size = new Size(763, 1012);
             dgvItems.TabIndex = 3;
             dgvItems.CellEndEdit += dgvItems_CellEndEdit;
             dgvItems.EditingControlShowing += dgvItems_EditingControlShowing;
             // 
             // no
             // 
-            no.FillWeight = 45.96099F;
+            no.FillWeight = 45F;
             no.HeaderText = "No.";
             no.MinimumWidth = 8;
             no.Name = "no";
+            no.Resizable = DataGridViewTriState.False;
             // 
             // item
             // 
-            item.FillWeight = 151.961212F;
+            item.FillWeight = 190F;
             item.HeaderText = "Item";
             item.MinimumWidth = 8;
             item.Name = "item";
             item.ReadOnly = true;
+            item.Resizable = DataGridViewTriState.False;
             // 
             // price
             // 
             dataGridViewCellStyle3.Format = "C2";
             price.DefaultCellStyle = dataGridViewCellStyle3;
-            price.FillWeight = 87.83516F;
+            price.FillWeight = 80F;
             price.HeaderText = "Price";
             price.MinimumWidth = 8;
             price.Name = "price";
             price.ReadOnly = true;
+            price.Resizable = DataGridViewTriState.False;
             // 
             // quantity
             // 
             dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
             quantity.DefaultCellStyle = dataGridViewCellStyle4;
-            quantity.FillWeight = 110.212456F;
+            quantity.FillWeight = 90F;
             quantity.HeaderText = "Quantity";
             quantity.MinimumWidth = 8;
             quantity.Name = "quantity";
+            quantity.Resizable = DataGridViewTriState.False;
             // 
             // total
             // 
             dataGridViewCellStyle5.Format = "C2";
             total.DefaultCellStyle = dataGridViewCellStyle5;
-            total.FillWeight = 104.03009F;
+            total.FillWeight = 90F;
             total.HeaderText = "Total";
             total.MinimumWidth = 8;
             total.Name = "total";
             total.ReadOnly = true;
+            total.Resizable = DataGridViewTriState.False;
             // 
             // panelMain
             // 
@@ -824,7 +829,7 @@
             panelMain.Dock = DockStyle.Fill;
             panelMain.Location = new Point(334, 146);
             panelMain.Name = "panelMain";
-            panelMain.Size = new Size(1176, 929);
+            panelMain.Size = new Size(1131, 929);
             panelMain.TabIndex = 5;
             // 
             // flowLayoutPanel
@@ -834,7 +839,7 @@
             flowLayoutPanel.Location = new Point(0, 0);
             flowLayoutPanel.Name = "flowLayoutPanel";
             flowLayoutPanel.Padding = new Padding(20);
-            flowLayoutPanel.Size = new Size(1174, 927);
+            flowLayoutPanel.Size = new Size(1129, 927);
             flowLayoutPanel.TabIndex = 1;
             // 
             // timer1
@@ -910,14 +915,14 @@
         private Guna.UI2.WinForms.Guna2Button btnMainDish;
         private Guna.UI2.WinForms.Guna2Button btnAllFood;
         private FlowLayoutPanel flowLayoutPanel;
+        private Label lblTableName;
+        private Label lblUser;
+        private Label lblOrderType;
+        private Button btnPayQR;
         private DataGridViewTextBoxColumn no;
         private DataGridViewTextBoxColumn item;
         private DataGridViewTextBoxColumn price;
         private DataGridViewTextBoxColumn quantity;
         private DataGridViewTextBoxColumn total;
-        private Label lblTableName;
-        private Label lblUser;
-        private Label lblOrderType;
-        private Button btnPayQR;
     }
 }

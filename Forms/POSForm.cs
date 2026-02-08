@@ -55,6 +55,10 @@ namespace OOAD_Project
             InitializeOrderDetails();
         }
 
+        public POSForm()
+        {
+        }
+
         #region Initialization
         private void InitializeOrderDetails()
         {
@@ -247,27 +251,28 @@ namespace OOAD_Project
         }
 
         // ============================================
-        // UPDATED: FoodCard_OnSelect - Now uses Decorator Pattern
+        // UPDATE: FoodCard_OnSelect - Pass Actual Category
         // ============================================
 
         private void FoodCard_OnSelect(object? sender, EventArgs e)
         {
             if (sender is not FoodCard card) return;
 
-            int productId = GetProductIdByName(card.Title);
-            if (productId == -1)
+            // Get product details including category
+            var productInfo = GetProductDetailsByName(card.Title);
+            if (productInfo == null)
             {
                 MessageBox.Show("Product not found in database.", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // ✅ DECORATOR PATTERN: Show customization dialog
+            // ✅ DECORATOR PATTERN: Show category-specific customization dialog
             using (var customDialog = new FormProductCustomization(
-                productId,
-                card.Title,
-                (decimal)card.Price,
-                "Main Dish"))
+                productInfo.ProductId,
+                productInfo.ProductName,
+                productInfo.Price,
+                productInfo.CategoryName)) // ← Pass actual category
             {
                 if (customDialog.ShowDialog() == DialogResult.OK)
                 {
@@ -288,7 +293,7 @@ namespace OOAD_Project
                         existingRow.Cells["quantity"].Value = qty;
                         existingRow.Cells["total"].Value = (double)(qty * itemPrice);
 
-                        UpdateOrderDetail(productId, qty, (double)itemPrice);
+                        UpdateOrderDetail(productInfo.ProductId, qty, (double)itemPrice);
                     }
                     else
                     {
@@ -300,21 +305,59 @@ namespace OOAD_Project
                         newRow.Cells["quantity"].Value = 1;
                         newRow.Cells["total"].Value = (double)itemPrice;
 
-                        InsertOrderDetail(productId, 1, (double)itemPrice);
+                        InsertOrderDetail(productInfo.ProductId, 1, (double)itemPrice);
                     }
 
                     UpdateRowNumbers();
                     UpdateGrandTotal();
                     UpdateOrderTotal();
                 }
-                // If DialogResult.Cancel, do nothing (user cancelled customization)
             }
+        }
+
+        // ============================================
+        // HELPER: Get Product with Category
+        // ============================================
+        private Product? GetProductDetailsByName(string productName)
+        {
+            string query = @"
+        SELECT p.productid, p.productname, p.price, c.categoryname
+        FROM products p
+        LEFT JOIN categories c ON p.categoryid = c.categoryid
+        WHERE p.productname = @name
+        LIMIT 1;";
+
+            try
+            {
+                using var conn = Database.GetConnection();
+                using var cmd = new NpgsqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("name", productName);
+                conn.Open();
+
+                using var reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    return new Product
+                    {
+                        ProductId = reader.GetInt32(0),
+                        ProductName = reader.GetString(1),
+                        Price = reader.GetDecimal(2),
+                        CategoryName = reader.IsDBNull(3) ? "Main Dish" : reader.GetString(3)
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error getting product details: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            return null;
         }
 
         // ============================================
         // ALTERNATIVE: Quick Add (Hold Shift to Skip Customization)
         // ============================================
-
         private void FoodCard_OnSelect_Alternative(object? sender, EventArgs e)
         {
             if (sender is not FoodCard card) return;

@@ -4,47 +4,18 @@ using OOAD_Project.Domain;
 
 namespace OOAD_Project.Patterns
 {
-    /// <summary>
-    /// STRATEGY PATTERN IMPLEMENTATION
-    /// Defines a family of payment algorithms, encapsulates each one,
-    /// and makes them interchangeable at runtime.
-    /// </summary>
 
     #region Strategy Interface
-
-    /// <summary>
-    /// Strategy interface - all payment methods must implement this
-    /// </summary>
     public interface IPaymentStrategy
     {
-        /// <summary>
-        /// Process payment and return success/failure
-        /// </summary>
         bool ProcessPayment(decimal amount, Order order);
-
-        /// <summary>
-        /// Get the name of this payment method
-        /// </summary>
         string GetPaymentMethodName();
-
-        /// <summary>
-        /// Print/display receipt after successful payment
-        /// </summary>
         void PrintReceipt(Order order);
-
-        /// <summary>
-        /// Validate if payment can be processed
-        /// </summary>
         bool CanProcess(decimal amount);
     }
-
     #endregion
 
     #region Concrete Strategy Implementations
-
-    /// <summary>
-    /// Cash payment strategy
-    /// </summary>
     public class CashPaymentStrategy : IPaymentStrategy
     {
         private decimal _cashReceived;
@@ -52,7 +23,6 @@ namespace OOAD_Project.Patterns
 
         public bool ProcessPayment(decimal amount, Order order)
         {
-            // Show cash input dialog
             using (var cashDialog = new Form())
             {
                 cashDialog.Text = "Cash Payment";
@@ -63,7 +33,6 @@ namespace OOAD_Project.Patterns
                 cashDialog.MaximizeBox = false;
                 cashDialog.MinimizeBox = false;
 
-                // Amount label
                 var lblAmount = new Label
                 {
                     Text = $"Total Amount: ${amount:F2}",
@@ -72,7 +41,6 @@ namespace OOAD_Project.Patterns
                     Location = new System.Drawing.Point(20, 20)
                 };
 
-                // Cash received label
                 var lblCash = new Label
                 {
                     Text = "Cash Received:",
@@ -80,7 +48,6 @@ namespace OOAD_Project.Patterns
                     Location = new System.Drawing.Point(20, 60)
                 };
 
-                // Cash input textbox
                 var txtCash = new TextBox
                 {
                     Width = 200,
@@ -88,7 +55,6 @@ namespace OOAD_Project.Patterns
                     Font = new System.Drawing.Font("Segoe UI", 10)
                 };
 
-                // Change label
                 var lblChange = new Label
                 {
                     Text = "Change: $0.00",
@@ -98,7 +64,6 @@ namespace OOAD_Project.Patterns
                     Location = new System.Drawing.Point(20, 100)
                 };
 
-                // Calculate change on text change
                 txtCash.TextChanged += (s, e) =>
                 {
                     if (decimal.TryParse(txtCash.Text, out decimal cash))
@@ -111,7 +76,6 @@ namespace OOAD_Project.Patterns
                     }
                 };
 
-                // Confirm button
                 var btnConfirm = new Button
                 {
                     Text = "Confirm Payment",
@@ -177,43 +141,34 @@ namespace OOAD_Project.Patterns
         public void PrintReceipt(Order order)
         {
             string receipt = $@"
-========================================
-           RESTAURANT POS RECEIPT
-========================================
-Order ID:        {order.OrderId}
-Date:            {DateTime.Now:yyyy-MM-dd HH:mm:ss}
-Table:           {order.TableId?.ToString() ?? "Takeaway"}
-----------------------------------------
-Total Amount:    ${order.TotalAmount:F2}
-Payment Method:  Cash
-Cash Received:   ${_cashReceived:F2}
-Change:          ${_change:F2}
-========================================
-        Thank you for your business!
-========================================
-";
+            ========================================
+                    RESTAURANT POS RECEIPT
+            ========================================
+            Order ID:        {order.OrderId}
+            Date:            {DateTime.Now:yyyy-MM-dd HH:mm:ss}
+            Table:           {order.TableId?.ToString() ?? "Takeaway"}
+            ----------------------------------------
+            Total Amount:    ${order.TotalAmount:F2}
+            Payment Method:  Cash
+            Cash Received:   ${_cashReceived:F2}
+            Change:          ${_change:F2}
+            ========================================
+                  Thank you for your business!
+            ========================================
+            ";
             Console.WriteLine(receipt);
-
-            // In real app: send to printer or save as PDF
             MessageBox.Show(receipt, "Receipt", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-
         public bool CanProcess(decimal amount) => amount > 0;
     }
 
-    /// <summary>
-    /// QR Code payment strategy
-    /// </summary>
     public class QRPaymentStrategy : IPaymentStrategy
     {
         private string? _transactionId;
-
         public bool ProcessPayment(decimal amount, Order order)
         {
-            // Generate QR code
             string qrContent = $"PAY|OrderID={order.OrderId}|Amount={amount:F2}|Time={DateTime.Now:yyyyMMddHHmmss}";
 
-            // Show QR payment dialog
             using (var qrDialog = new Form())
             {
                 qrDialog.Text = "QR Code Payment";
@@ -222,7 +177,6 @@ Change:          ${_change:F2}
                 qrDialog.StartPosition = FormStartPosition.CenterParent;
                 qrDialog.FormBorderStyle = FormBorderStyle.FixedDialog;
 
-                // Amount label
                 var lblAmount = new Label
                 {
                     Text = $"Amount to Pay: ${amount:F2}",
@@ -231,7 +185,6 @@ Change:          ${_change:F2}
                     Location = new System.Drawing.Point(20, 20)
                 };
 
-                // Instruction label
                 var lblInstruction = new Label
                 {
                     Text = "Scan QR code with your mobile banking app",
@@ -239,7 +192,6 @@ Change:          ${_change:F2}
                     Location = new System.Drawing.Point(20, 60)
                 };
 
-                // QR Code placeholder (you need QRCoder NuGet package)
                 var pbQR = new PictureBox
                 {
                     Width = 400,
@@ -249,7 +201,6 @@ Change:          ${_change:F2}
                     SizeMode = PictureBoxSizeMode.CenterImage
                 };
 
-                // Generate QR code image
                 try
                 {
                     using var qrGenerator = new QRCoder.QRCodeGenerator();
@@ -259,7 +210,6 @@ Change:          ${_change:F2}
                 }
                 catch
                 {
-                    // Fallback if QRCoder fails
                     pbQR.BackColor = System.Drawing.Color.LightGray;
                     var lblQRText = new Label
                     {
@@ -271,7 +221,6 @@ Change:          ${_change:F2}
                     pbQR.Controls.Add(lblQRText);
                 }
 
-                // Confirm button
                 var btnConfirm = new Button
                 {
                     Text = "I've Paid - Confirm",
@@ -286,7 +235,6 @@ Change:          ${_change:F2}
 
                 btnConfirm.Click += (s, e) =>
                 {
-                    // Simulate payment verification
                     _transactionId = Guid.NewGuid().ToString("N").Substring(0, 12).ToUpper();
 
                     MessageBox.Show(
@@ -298,7 +246,6 @@ Change:          ${_change:F2}
                     qrDialog.DialogResult = DialogResult.OK;
                 };
 
-                // Cancel button
                 var btnCancel = new Button
                 {
                     Text = "Cancel",
@@ -341,30 +288,18 @@ Transaction ID:  {_transactionId}
 
         public bool CanProcess(decimal amount) => amount > 0;
     }
-
     #endregion
 
     #region Payment Context
-
-    /// <summary>
-    /// Context class that uses a payment strategy
-    /// </summary>
     public class PaymentContext
     {
         private IPaymentStrategy? _strategy;
-
-        /// <summary>
-        /// Set the payment strategy at runtime
-        /// </summary>
         public void SetStrategy(IPaymentStrategy strategy)
         {
             _strategy = strategy;
             Console.WriteLine($"[PaymentContext] Strategy set to: {strategy.GetPaymentMethodName()}");
         }
 
-        /// <summary>
-        /// Execute payment using the selected strategy
-        /// </summary>
         public bool ExecutePayment(decimal amount, Order order)
         {
             if (_strategy == null)
@@ -391,18 +326,13 @@ Transaction ID:  {_transactionId}
             {
                 _strategy.PrintReceipt(order);
             }
-
             return success;
         }
 
-        /// <summary>
-        /// Get current payment method name
-        /// </summary>
         public string GetCurrentMethod()
         {
             return _strategy?.GetPaymentMethodName() ?? "None";
         }
     }
-
     #endregion
 }
