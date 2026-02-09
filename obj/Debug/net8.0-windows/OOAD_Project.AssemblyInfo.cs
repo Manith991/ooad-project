@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("OOAD_Project")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bea107eeca0e6beca7fa9d9da7335836eae02476")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1317e7ab95d9ff754402cb9877b393bb1605990d")]
 [assembly: System.Reflection.AssemblyProductAttribute("OOAD_Project")]
 [assembly: System.Reflection.AssemblyTitleAttribute("OOAD_Project")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

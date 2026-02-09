@@ -25,11 +25,7 @@ namespace OOAD_Project
         private Panel mainPanel;
 
         // Dynamic customization groups
-        private GroupBox gbExtras;
-        private GroupBox gbSize;
-        private GroupBox gbTemperature;
-        private GroupBox gbSweetness;
-        private GroupBox gbDiscounts;
+
         private CheckBox chkAddTax;
         private Label lblFinalPrice;
         private Label lblFinalDescription;
@@ -41,6 +37,7 @@ namespace OOAD_Project
         private Dictionary<string, RadioButton> sizeRadioButtons = new Dictionary<string, RadioButton>();
         private Dictionary<string, RadioButton> temperatureRadioButtons = new Dictionary<string, RadioButton>();
         private Dictionary<string, RadioButton> sweetnessRadioButtons = new Dictionary<string, RadioButton>();
+        private GroupBox groupBox1;
         private Dictionary<string, CheckBox> discountCheckboxes = new Dictionary<string, CheckBox>();
 
         public IProduct CustomizedProduct => _product;
@@ -60,13 +57,13 @@ namespace OOAD_Project
         {
             // Form settings
             this.Text = "Customize Your Order";
-            this.Width = 550;
-            this.Height = 700;
+            this.Width = 555;
+            this.Height = 850;
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.AutoScroll = true;
+            //this.AutoScroll = true;
 
             int yPos = 20;
 
@@ -175,8 +172,8 @@ namespace OOAD_Project
             {
                 Text = "Add to Order",
                 Width = 240,
-                Height = 50,
-                Location = new Point(20, yPos),
+                Height = 70,
+                Location = new Point(20, yPos + 12),
                 BackColor = Color.FromArgb(0, 123, 255),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -191,8 +188,8 @@ namespace OOAD_Project
             {
                 Text = "Cancel",
                 Width = 240,
-                Height = 50,
-                Location = new Point(270, yPos),
+                Height = 70,
+                Location = new Point(270, yPos + 12),
                 BackColor = Color.FromArgb(108, 117, 125),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -202,6 +199,14 @@ namespace OOAD_Project
             };
             btnCancel.FlatAppearance.BorderSize = 0;
             this.Controls.Add(btnCancel);
+
+            var bottomSpacer = new Panel
+            {
+                Location = new Point(0, yPos + btnAdd.Height + 20),
+                Width = this.Width,
+                Height = 10
+            };
+            this.Controls.Add(bottomSpacer);
         }
 
         /// <summary>
@@ -536,7 +541,7 @@ namespace OOAD_Project
             }
 
             mainPanel.Controls.Add(gb);
-            return yPos + gb.Height + 10;
+            return yPos + gb.Height + 8;
         }
 
         private int AddDiscountOptions(int yPos)
