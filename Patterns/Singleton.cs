@@ -1,7 +1,5 @@
 ﻿using Npgsql;
-using System;
 using System.Data;
-using System.IO;
 using System.Text.Json;
 
 namespace OOAD_Project.Patterns

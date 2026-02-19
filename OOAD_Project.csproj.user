@@ -67,20 +67,5 @@
     <Compile Update="Forms\TableForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Refactored\CategoriesFormRefactored.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="Refactored\ProductFormRefactored.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="Refactored\RecordFormRefactored.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="Refactored\StaffFormRefactored.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="Refactored\TableFormRefactored.cs">
-      <SubType>Form</SubType>
-    </Compile>
   </ItemGroup>
 </Project>

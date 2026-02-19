@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace OOAD_Project.Patterns
+﻿namespace OOAD_Project.Patterns
 {
     #region Product Interface
     public interface IProduct

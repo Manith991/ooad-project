@@ -1,10 +1,26 @@
-﻿using Npgsql;
-using System.Data;
+﻿using System;
+using System.Drawing;
+using System.IO;
+using System.Windows.Forms;
+using OOAD_Project.Domain;
+using OOAD_Project.Patterns.Repository;
+using OOAD_Project.Patterns.Command;
 
 namespace OOAD_Project
 {
+    /// <summary>
+    /// CategoriesForm – uses:
+    ///   REPOSITORY PATTERN : CategoryRepository handles all DB access
+    ///   COMMAND PATTERN    : Add / Edit / Delete are undoable ICommands
+    /// </summary>
     public partial class CategoriesForm : Form
     {
+        // ✅ REPOSITORY PATTERN
+        private readonly IRepository<Category> _repo;
+
+        // ✅ COMMAND PATTERN
+        private readonly CommandInvoker _invoker = new CommandInvoker();
+
         private readonly string userRole;
 
         public CategoriesForm(string userRole)
@@ -12,123 +28,193 @@ namespace OOAD_Project
             InitializeComponent();
             this.userRole = userRole;
 
+            // ✅ REPOSITORY PATTERN: single place for all category DB calls
+            _repo = new CategoryRepository();
+
             LoadCategories();
             RestrictActionsByRole();
         }
 
-        // 🔒 Restrict Edit/Delete for non-admin users
+        // ─── Role restriction ───────────────────────────────────────────────
         private void RestrictActionsByRole()
         {
             if (userRole != "(admin)")
             {
-                // Hide Edit/Delete columns
                 if (dgvCategory.Columns.Contains("colEdit"))
                     dgvCategory.Columns["colEdit"].Visible = false;
-
                 if (dgvCategory.Columns.Contains("colDelete"))
                     dgvCategory.Columns["colDelete"].Visible = false;
             }
         }
 
-        // 🟢 Load categories from the database
+        // ─── Load ───────────────────────────────────────────────────────────
         private void LoadCategories()
         {
             dgvCategory.Rows.Clear();
 
-            string query = "SELECT categoryid, categoryname, imagepath FROM categories ORDER BY categoryid ASC";
-            DataTable dt = Database.GetData(query);
-
+            // ✅ REPOSITORY PATTERN
+            var categories = _repo.GetAll();
             int rowNo = 1;
-            foreach (DataRow row in dt.Rows)
+
+            foreach (var cat in categories)
             {
-                int id = Convert.ToInt32(row["categoryid"]);
-                string name = row["categoryname"].ToString();
-                string imgPath = row["imagepath"]?.ToString();
-
-                Image img = null;
-                if (!string.IsNullOrEmpty(imgPath))
-                {
-                    string fullPath = Path.Combine(Application.StartupPath, "Resources", imgPath + ".png");
-                    if (File.Exists(fullPath))
-                        img = Image.FromFile(fullPath);
-                }
-
-                // 🖼️ Load default image if not found
-                if (img == null)
-                {
-                    string defaultImg = Path.Combine(Application.StartupPath, "Resources", "no_image.png");
-                    if (File.Exists(defaultImg))
-                        img = Image.FromFile(defaultImg);
-                }
-
-                int rowIndex = dgvCategory.Rows.Add(rowNo++, name, img);
-                dgvCategory.Rows[rowIndex].Tag = id; // store categoryid here
+                Image? img = LoadImage(cat.ImagePath);
+                int rowIndex = dgvCategory.Rows.Add(rowNo++, cat.CategoryName, img);
+                dgvCategory.Rows[rowIndex].Tag = cat.CategoryId;
             }
         }
 
-        // ✏️ Edit or ❌ Delete category (Admins only)
+        // ─── Edit / Delete cell click ───────────────────────────────────────
         private void dgvCategory_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0) return;
 
-            string colName = dgvCategory.Columns[e.ColumnIndex].Name;
-            DataGridViewRow row = dgvCategory.Rows[e.RowIndex];
-
-            int categoryId = (int)(row.Tag ?? -1);
-            string categoryName = row.Cells["colCategory"].Value?.ToString();
-            Image existingImage = row.Cells["colIcon"].Value as Image;
-
-            // 🛑 Restrict non-admin users
             if (userRole != "(admin)")
             {
-                MessageBox.Show("Only admins can modify or delete categories.", "Access Denied",
+                MessageBox.Show("Only admins can modify or delete categories.",
+                    "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string colName = dgvCategory.Columns[e.ColumnIndex].Name;
+            var row = dgvCategory.Rows[e.RowIndex];
+            int categoryId = row.Tag is int id ? id : -1;
+            string categoryName = row.Cells["colCategory"].Value?.ToString() ?? "";
+            Image? existingImage = row.Cells["colIcon"].Value as Image;
+
+            // ✅ EDIT → COMMAND PATTERN (UpdateCategoryCommand)
+            if (colName == "colEdit")
+            {
+                using var editForm = new FormEditCate(categoryId, categoryName, existingImage);
+                if (editForm.ShowDialog(this) != DialogResult.OK) return;
+
+                // ✅ REPOSITORY PATTERN: repository fetches the old state internally
+                var updated = new Category
+                {
+                    CategoryId = categoryId,
+                    CategoryName = editForm.CategoryName,
+                    ImagePath = string.IsNullOrEmpty(editForm.ImagePath)
+                                       ? null
+                                       : Path.GetFileNameWithoutExtension(editForm.ImagePath)
+                };
+
+                // ✅ COMMAND PATTERN
+                var cmd = new UpdateCategoryCommand(updated, _repo);
+                try
+                {
+                    _invoker.ExecuteCommand(cmd);
+                    MessageBox.Show("Category updated successfully!");
+                    LoadCategories();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error updating category:\n" + ex.Message, "Error");
+                }
+            }
+
+            // ✅ DELETE → COMMAND PATTERN (DeleteCategoryCommand)
+            else if (colName == "colDelete")
+            {
+                var confirm = MessageBox.Show(
+                    $"Are you sure you want to delete '{categoryName}'?",
+                    "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+                if (confirm != DialogResult.Yes) return;
+
+                // ✅ COMMAND PATTERN
+                var cmd = new DeleteCategoryCommand(categoryId, _repo);
+                try
+                {
+                    _invoker.ExecuteCommand(cmd);
+                    LoadCategories();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error deleting category:\n" + ex.Message, "Error");
+                }
+            }
+        }
+
+        // ─── Add button ─────────────────────────────────────────────────────
+        private void btnAdd_Click(object sender, EventArgs e)
+        {
+            if (userRole != "(admin)")
+            {
+                MessageBox.Show("Only admins can add categories.", "Access Denied",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            if (colName == "colEdit")
+            using var addForm = new FormEditCate(0, "New Category");
+            addForm.Text = "Add Category";
+            if (addForm.ShowDialog(this) != DialogResult.OK) return;
+
+            var newCat = new Category
             {
-                using (FormEditCate editForm = new FormEditCate(categoryId, categoryName, existingImage))
-                {
-                    if (editForm.ShowDialog(this) == DialogResult.OK)
-                    {
-                        try
-                        {
-                            Database.Execute(
-                                "UPDATE categories SET categoryname = @name, imagepath = @image WHERE categoryid = @id",
-                                new NpgsqlParameter("@name", editForm.CategoryName),
-                                new NpgsqlParameter("@image", string.IsNullOrEmpty(editForm.ImagePath)
-                                    ? DBNull.Value
-                                    : Path.GetFileNameWithoutExtension(editForm.ImagePath)),
-                                new NpgsqlParameter("@id", categoryId)
-                            );
+                CategoryName = addForm.CategoryName,
+                ImagePath = string.IsNullOrEmpty(addForm.ImagePath)
+                                   ? null
+                                   : Path.GetFileNameWithoutExtension(addForm.ImagePath)
+            };
 
-                            MessageBox.Show("Category updated successfully!");
-
-                            // Reload the data without closing the form
-                            LoadCategories();
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show("Error updating category:\n" + ex.Message, "SQL Error");
-                        }
-                    }
-                }
-            }
-
-            // 🔴 Delete
-            else if (colName == "colDelete")
+            // ✅ COMMAND PATTERN (AddCategoryCommand)
+            var cmd = new AddCategoryCommand(newCat, _repo);
+            try
             {
-                var confirm = MessageBox.Show($"Are you sure you want to delete '{categoryName}'?",
-                    "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-
-                if (confirm == DialogResult.Yes)
-                {
-                    string query = "DELETE FROM categories WHERE categoryid = @id";
-                    Database.Execute(query, new NpgsqlParameter("@id", categoryId));
-                    LoadCategories();
-                }
+                _invoker.ExecuteCommand(cmd);
+                LoadCategories();
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error adding category:\n" + ex.Message, "Error");
+            }
+        }
+
+        // ─── Undo / Redo (Ctrl+Z / Ctrl+Y) ─────────────────────────────────
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == (Keys.Control | Keys.Z)) { PerformUndo(); return true; }
+            if (keyData == (Keys.Control | Keys.Y)) { PerformRedo(); return true; }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void PerformUndo()
+        {
+            if (!_invoker.CanUndo) { MessageBox.Show("Nothing to undo."); return; }
+            try { _invoker.Undo(); LoadCategories(); }
+            catch (Exception ex) { MessageBox.Show("Undo failed: " + ex.Message); }
+        }
+
+        private void PerformRedo()
+        {
+            if (!_invoker.CanRedo) { MessageBox.Show("Nothing to redo."); return; }
+            try { _invoker.Redo(); LoadCategories(); }
+            catch (Exception ex) { MessageBox.Show("Redo failed: " + ex.Message); }
+        }
+
+        // ─── Image helper ────────────────────────────────────────────────────
+        private Image? LoadImage(string? imagePath)
+        {
+            if (string.IsNullOrEmpty(imagePath)) return GetDefaultImage();
+
+            string[] paths =
+            {
+                imagePath,
+                Path.Combine(Application.StartupPath, "Resources", imagePath),
+                Path.Combine(Application.StartupPath, "Resources", imagePath + ".png"),
+                Path.Combine(Application.StartupPath, "Resources", imagePath + ".jpg")
+            };
+
+            foreach (var p in paths)
+                if (File.Exists(p)) return Image.FromFile(p);
+
+            return GetDefaultImage();
+        }
+
+        private Image? GetDefaultImage()
+        {
+            string def = Path.Combine(Application.StartupPath, "Resources", "no_image.png");
+            return File.Exists(def) ? Image.FromFile(def) : null;
         }
     }
 }

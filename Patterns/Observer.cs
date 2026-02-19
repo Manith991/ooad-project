@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using OOAD_Project.Domain;
+﻿using OOAD_Project.Domain;
 
 namespace OOAD_Project.Patterns
 {

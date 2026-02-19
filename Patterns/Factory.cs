@@ -1,6 +1,4 @@
-﻿using System.Windows.Forms;
-
-namespace OOAD_Project.Patterns
+﻿namespace OOAD_Project.Patterns
 {
     #region Factory Interface
     public interface IFormFactory

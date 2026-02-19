@@ -1,102 +1,74 @@
-﻿using Npgsql;
-using System.Data;
+﻿using System;
+using System.Drawing;
+using System.IO;
+using System.Windows.Forms;
+using OOAD_Project.Domain;
+using OOAD_Project.Patterns.Repository;
+using OOAD_Project.Patterns.Command;
 
 namespace OOAD_Project
 {
+    /// <summary>
+    /// ProductForm – uses:
+    ///   REPOSITORY PATTERN : ProductRepository handles all DB access
+    ///   COMMAND PATTERN    : Add / Edit / Delete are undoable ICommands
+    /// </summary>
     public partial class ProductForm : Form
     {
-        // Small helper to store additional row info (productId, categoryId, imagePath)
+        // Row metadata stored in DataGridViewRow.Tag
         private readonly record struct ProductRowInfo(int ProductId, int CategoryId, string? ImagePath);
 
-        private readonly string userRole; // 🟢 Store logged-in user role
+        // ✅ REPOSITORY PATTERN
+        private readonly IRepository<Product> _repo;
+
+        // ✅ COMMAND PATTERN
+        private readonly CommandInvoker _invoker = new CommandInvoker();
+
+        private readonly string userRole;
 
         public ProductForm(string userRole)
         {
             InitializeComponent();
             this.userRole = userRole;
+
+            // ✅ REPOSITORY PATTERN
+            _repo = new ProductRepository();
+
             LoadProducts();
             RestrictActionsByRole();
         }
 
-        // 🔒 Restrict Add/Edit/Delete for non-admins
+        // ─── Role restriction ───────────────────────────────────────────────
         private void RestrictActionsByRole()
         {
             if (userRole != "(admin)")
             {
-                // Hide Add button
                 btnAdd.Enabled = false;
-                btnAdd.Visible = true;
-
-                // Hide edit and delete columns if they exist
-                if (dgvProduct.Columns.Contains("colEdit"))
-                    dgvProduct.Columns["colEdit"].Visible = false;
-
-                if (dgvProduct.Columns.Contains("colDelete"))
-                    dgvProduct.Columns["colDelete"].Visible = false;
+                if (dgvProduct.Columns.Contains("colEdit")) dgvProduct.Columns["colEdit"].Visible = false;
+                if (dgvProduct.Columns.Contains("colDelete")) dgvProduct.Columns["colDelete"].Visible = false;
             }
         }
 
-        // 🟢 Load products with category names and category IDs
+        // ─── Load ───────────────────────────────────────────────────────────
         private void LoadProducts()
         {
             dgvProduct.Rows.Clear();
 
-            string query = @"
-                SELECT p.productid, p.productname, p.price, p.categoryid, c.categoryname, p.imagepath
-                FROM products p
-                LEFT JOIN categories c ON p.categoryid = c.categoryid
-                ORDER BY p.productid ASC";
-
-            DataTable dt = Database.GetData(query);
-
+            // ✅ REPOSITORY PATTERN
+            var products = _repo.GetAll();
             int rowNo = 1;
-            foreach (DataRow row in dt.Rows)
+
+            foreach (var p in products)
             {
-                int id = row["productid"] == DBNull.Value ? -1 : Convert.ToInt32(row["productid"]);
-                string productName = row["productname"]?.ToString() ?? string.Empty;
-                decimal price = row["price"] == DBNull.Value ? 0m : Convert.ToDecimal(row["price"]);
-                int categoryId = row.Table.Columns.Contains("categoryid") && row["categoryid"] != DBNull.Value
-                    ? Convert.ToInt32(row["categoryid"])
-                    : -1;
-                string categoryName = row["categoryname"]?.ToString() ?? "Unknown";
-                string? imgPath = row["imagepath"]?.ToString();
-
-                Image? img = null;
-
-                if (!string.IsNullOrEmpty(imgPath))
-                {
-                    string[] possiblePaths = new string[]
-                    {
-                        imgPath,
-                        Path.Combine(Application.StartupPath, "Resources", "Foods", imgPath),
-                        Path.Combine(Application.StartupPath, "Resources", "Foods", imgPath + ".png"),
-                        Path.Combine(Application.StartupPath, "Resources", "Foods", imgPath + ".jpg"),
-                        Path.Combine(Application.StartupPath, "Resources", "Foods", imgPath + ".jpeg")
-                    };
-
-                    foreach (string path in possiblePaths)
-                    {
-                        if (File.Exists(path))
-                        {
-                            img = Image.FromFile(path);
-                            break;
-                        }
-                    }
-                }
-
-                if (img == null)
-                {
-                    string defaultImg = Path.Combine(Application.StartupPath, "Resources", "no_image.png");
-                    if (File.Exists(defaultImg))
-                        img = Image.FromFile(defaultImg);
-                }
-
-                int rowIndex = dgvProduct.Rows.Add(rowNo++, productName, price.ToString("0.00"), categoryName, img);
-                dgvProduct.Rows[rowIndex].Tag = new ProductRowInfo(id, categoryId, imgPath);
+                Image? img = LoadImage(p.ImagePath, "Foods");
+                int rowIndex = dgvProduct.Rows.Add(rowNo++, p.ProductName,
+                                                   p.Price.ToString("0.00"), p.CategoryName, img);
+                dgvProduct.Rows[rowIndex].Tag =
+                    new ProductRowInfo(p.ProductId, p.CategoryId ?? -1, p.ImagePath);
             }
         }
 
-        // ➕ Add new product (Admins only)
+        // ─── Add ────────────────────────────────────────────────────────────
         private void btnAdd_Click(object sender, EventArgs e)
         {
             if (userRole != "(admin)")
@@ -106,42 +78,38 @@ namespace OOAD_Project
                 return;
             }
 
-            using (FormAddProduct addForm = new FormAddProduct())
+            using var addForm = new FormAddProduct();
+            addForm.StartPosition = FormStartPosition.CenterParent;
+            if (addForm.ShowDialog(this) != DialogResult.OK) return;
+
+            var newProduct = new Product
             {
-                addForm.StartPosition = FormStartPosition.CenterParent;
+                ProductName = addForm.ProductName,
+                Price = addForm.Price,
+                CategoryId = addForm.CategoryID,
+                ImagePath = string.IsNullOrEmpty(addForm.ImagePath)
+                                  ? null
+                                  : Path.GetFileNameWithoutExtension(addForm.ImagePath)
+            };
 
-                if (addForm.ShowDialog(this) == DialogResult.OK)
-                {
-                    string query = "INSERT INTO products (productname, price, categoryid, imagepath) VALUES (@name, @price, @catid, @image)";
-                    Database.Execute(query,
-                        new NpgsqlParameter("@name", addForm.ProductName),
-                        new NpgsqlParameter("@price", addForm.Price),
-                        new NpgsqlParameter("@catid", addForm.CategoryID),
-                        new NpgsqlParameter("@image", Path.GetFileNameWithoutExtension(addForm.ImagePath)));
-
-                    LoadProducts();
-                }
+            // ✅ COMMAND PATTERN (ProductCommand = AddProductCommand)
+            var cmd = new ProductCommand(newProduct, _repo);
+            try
+            {
+                _invoker.ExecuteCommand(cmd);
+                LoadProducts();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error adding product:\n" + ex.Message, "Error");
             }
         }
 
-        // ✏️ Edit or ❌ Delete (Admins only)
+        // ─── Edit / Delete cell click ───────────────────────────────────────
         private void dgvProduct_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0)
-                return;
+            if (e.RowIndex < 0) return;
 
-            string columnName = dgvProduct.Columns[e.ColumnIndex].Name;
-            DataGridViewRow row = dgvProduct.Rows[e.RowIndex];
-            ProductRowInfo info = row.Tag is ProductRowInfo pr ? pr : new ProductRowInfo(-1, -1, null);
-
-            int productId = info.ProductId;
-            int categoryId = info.CategoryId;
-            string imagePathFromTag = info.ImagePath ?? string.Empty;
-            string productName = row.Cells["colProduct"].Value?.ToString() ?? string.Empty;
-            decimal.TryParse(row.Cells["colPrice"].Value?.ToString() ?? "0", out decimal price);
-            string categoryName = row.Cells["colCategory"].Value?.ToString() ?? string.Empty;
-
-            // 🛑 Restrict non-admins
             if (userRole != "(admin)")
             {
                 MessageBox.Show("Only admins can modify or delete products.", "Access Denied",
@@ -149,42 +117,123 @@ namespace OOAD_Project
                 return;
             }
 
-            // 🟢 Edit
-            if (columnName == "colEdit")
+            string colName = dgvProduct.Columns[e.ColumnIndex].Name;
+            var row = dgvProduct.Rows[e.RowIndex];
+            var info = row.Tag is ProductRowInfo pri ? pri : new ProductRowInfo(-1, -1, null);
+
+            // ✅ EDIT → COMMAND PATTERN (UpdateProductCommand)
+            if (colName == "colEdit")
             {
-                using (FormAddProduct editForm = new FormAddProduct(productId, productName, price, categoryId, imagePathFromTag))
+                // ✅ REPOSITORY PATTERN: get full product data
+                var product = _repo.GetById(info.ProductId);
+                if (product == null) return;
+
+                using var editForm = new FormAddProduct(
+                    product.ProductId, product.ProductName,
+                    product.Price, product.CategoryId ?? -1, product.ImagePath);
+                editForm.StartPosition = FormStartPosition.CenterParent;
+                if (editForm.ShowDialog(this) != DialogResult.OK) return;
+
+                var updated = new Product
                 {
-                    editForm.StartPosition = FormStartPosition.CenterParent;
+                    ProductId = product.ProductId,
+                    ProductName = editForm.ProductName,
+                    Price = editForm.Price,
+                    CategoryId = editForm.CategoryID,
+                    ImagePath = string.IsNullOrEmpty(editForm.ImagePath)
+                                      ? product.ImagePath
+                                      : Path.GetFileNameWithoutExtension(editForm.ImagePath)
+                };
 
-                    if (editForm.ShowDialog(this) == DialogResult.OK)
-                    {
-                        string query = @"UPDATE products 
-                                         SET productname = @name, price = @price, categoryid = @catid, imagepath = @image 
-                                         WHERE productid = @id";
-                        Database.Execute(query,
-                            new NpgsqlParameter("@name", editForm.ProductName),
-                            new NpgsqlParameter("@price", editForm.Price),
-                            new NpgsqlParameter("@catid", editForm.CategoryID),
-                            new NpgsqlParameter("@image", Path.GetFileNameWithoutExtension(editForm.ImagePath)),
-                            new NpgsqlParameter("@id", productId));
-
-                        LoadProducts();
-                    }
-                }
-            }
-            // 🔴 Delete
-            else if (columnName == "colDelete")
-            {
-                var confirm = MessageBox.Show($"Are you sure you want to delete '{productName}'?",
-                    "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-
-                if (confirm == DialogResult.Yes)
+                // ✅ COMMAND PATTERN
+                var cmd = new UpdateProductCommand(updated, _repo);
+                try
                 {
-                    string query = "DELETE FROM products WHERE productid = @id";
-                    Database.Execute(query, new NpgsqlParameter("@id", productId));
+                    _invoker.ExecuteCommand(cmd);
+                    MessageBox.Show("Product updated successfully!");
                     LoadProducts();
                 }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error updating product:\n" + ex.Message, "Error");
+                }
             }
+
+            // ✅ DELETE → COMMAND PATTERN (DeleteProductCommand)
+            else if (colName == "colDelete")
+            {
+                string name = row.Cells["colProduct"].Value?.ToString() ?? "";
+                var confirm = MessageBox.Show(
+                    $"Are you sure you want to delete '{name}'?",
+                    "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+                if (confirm != DialogResult.Yes) return;
+
+                // ✅ COMMAND PATTERN
+                var cmd = new DeleteProductCommand(info.ProductId, _repo);
+                try
+                {
+                    _invoker.ExecuteCommand(cmd);
+                    LoadProducts();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error deleting product:\n" + ex.Message, "Error");
+                }
+            }
+        }
+
+        // ─── Undo / Redo (Ctrl+Z / Ctrl+Y) ─────────────────────────────────
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == (Keys.Control | Keys.Z)) { PerformUndo(); return true; }
+            if (keyData == (Keys.Control | Keys.Y)) { PerformRedo(); return true; }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void PerformUndo()
+        {
+            if (!_invoker.CanUndo) { MessageBox.Show("Nothing to undo."); return; }
+            try { _invoker.Undo(); LoadProducts(); }
+            catch (Exception ex) { MessageBox.Show("Undo failed: " + ex.Message); }
+        }
+
+        private void PerformRedo()
+        {
+            if (!_invoker.CanRedo) { MessageBox.Show("Nothing to redo."); return; }
+            try { _invoker.Redo(); LoadProducts(); }
+            catch (Exception ex) { MessageBox.Show("Redo failed: " + ex.Message); }
+        }
+
+        // ─── Image helper ────────────────────────────────────────────────────
+        private Image? LoadImage(string? imagePath, string subfolder = "")
+        {
+            if (string.IsNullOrEmpty(imagePath)) return GetDefaultImage();
+
+            string resBase = Path.Combine(Application.StartupPath, "Resources");
+            string sub = string.IsNullOrEmpty(subfolder)
+                                 ? resBase
+                                 : Path.Combine(resBase, subfolder);
+
+            string[] paths =
+            {
+                imagePath,
+                Path.Combine(sub, imagePath),
+                Path.Combine(sub, imagePath + ".png"),
+                Path.Combine(sub, imagePath + ".jpg"),
+                Path.Combine(sub, imagePath + ".jpeg")
+            };
+
+            foreach (var p in paths)
+                if (File.Exists(p)) return Image.FromFile(p);
+
+            return GetDefaultImage();
+        }
+
+        private Image? GetDefaultImage()
+        {
+            string def = Path.Combine(Application.StartupPath, "Resources", "no_image.png");
+            return File.Exists(def) ? Image.FromFile(def) : null;
         }
     }
 }

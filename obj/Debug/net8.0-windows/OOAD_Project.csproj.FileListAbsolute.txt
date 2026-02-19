@@ -71,8 +71,3 @@ D:\RUPP\OOAD\OOAD_Project\OOAD_Project\bin\Debug\net8.0-windows\Resources\Foods\
 D:\RUPP\OOAD\OOAD_Project\OOAD_Project\obj\Debug\net8.0-windows\OOAD_Project.sourcelink.json
 D:\RUPP\OOAD\OOAD_Project\OOAD_Project\obj\Debug\net8.0-windows\OOAD_Project.FormProductCustomization.resources
 D:\RUPP\OOAD\OOAD_Project\OOAD_Project\obj\Debug\net8.0-windows\OOAD_Project.Patterns.TemplateMethod.BaseCrudForm.resources
-D:\RUPP\OOAD\OOAD_Project\OOAD_Project\obj\Debug\net8.0-windows\OOAD_Project.Refactored.CategoriesFormRefactored.resources
-D:\RUPP\OOAD\OOAD_Project\OOAD_Project\obj\Debug\net8.0-windows\OOAD_Project.Refactored.ProductFormRefactored.resources
-D:\RUPP\OOAD\OOAD_Project\OOAD_Project\obj\Debug\net8.0-windows\OOAD_Project.Refactored.RecordFormRefactored.resources
-D:\RUPP\OOAD\OOAD_Project\OOAD_Project\obj\Debug\net8.0-windows\OOAD_Project.Refactored.StaffFormRefactored.resources
-D:\RUPP\OOAD\OOAD_Project\OOAD_Project\obj\Debug\net8.0-windows\OOAD_Project.Refactored.TableFormRefactored.resources

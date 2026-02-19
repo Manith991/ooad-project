@@ -1,77 +1,68 @@
-﻿using Npgsql;
-using System.Data;
+﻿using System;
+using System.Windows.Forms;
+using OOAD_Project.Domain;
+using OOAD_Project.Patterns.Repository;
+using OOAD_Project.Patterns.Command;
 
 namespace OOAD_Project
 {
+    /// <summary>
+    /// TableForm – uses:
+    ///   REPOSITORY PATTERN : TableRepository handles all DB access
+    ///   COMMAND PATTERN    : Add / Edit / Delete are undoable ICommands
+    /// </summary>
     public partial class TableForm : Form
     {
         private readonly record struct TableRowInfo(int TableId);
+
+        // ✅ REPOSITORY PATTERN
+        private readonly IRepository<Table> _repo;
+
+        // ✅ COMMAND PATTERN
+        private readonly CommandInvoker _invoker = new CommandInvoker();
+
         private readonly string userRole;
 
         public TableForm(string userRole)
         {
             InitializeComponent();
             this.userRole = userRole;
+
+            // ✅ REPOSITORY PATTERN
+            _repo = new TableRepository();
+
             LoadTables();
             RestrictActionsByRole();
         }
 
-        // 🟢 Load tables from the database
-        private void LoadTables()
-        {
-            dgvTable.Rows.Clear();
-
-            string query = @"SELECT table_id, table_name, capacity, status
-                             FROM tables
-                             ORDER BY table_id ASC";
-
-            DataTable dt = Database.GetData(query);
-
-            int rowNo = 1;
-            foreach (DataRow row in dt.Rows)
-            {
-                int id = Convert.ToInt32(row["table_id"]);
-                string name = row["table_name"].ToString() ?? string.Empty;
-                int capacity = Convert.ToInt32(row["capacity"]);
-                string status = row["status"].ToString() ?? "Available";
-
-                int rowIndex = dgvTable.Rows.Add(rowNo++, name, capacity, status);
-                dgvTable.Rows[rowIndex].Tag = new TableRowInfo(id);
-            }
-
-            // Disable edit/delete buttons if not admin
-            if (userRole != "(admin)")
-            {
-                foreach (DataGridViewRow r in dgvTable.Rows)
-                {
-                    if (r.Cells["colEdit"] is DataGridViewButtonCell editCell)
-                        editCell.ReadOnly = true;
-
-                    if (r.Cells["colDelete"] is DataGridViewButtonCell deleteCell)
-                        deleteCell.ReadOnly = true;
-                }
-            }
-        }
-
-        // 🔒 Apply role permissions and change button image
+        // ─── Role restriction ───────────────────────────────────────────────
         private void RestrictActionsByRole()
         {
             if (userRole != "(admin)")
             {
-                // Hide Add button
                 btnAdd.Enabled = false;
-                btnAdd.Visible = true;
-
-                // Hide Edit/Delete columns
-                if (dgvTable.Columns.Contains("colEdit"))
-                    dgvTable.Columns["colEdit"].Visible = false;
-
-                if (dgvTable.Columns.Contains("colDelete"))
-                    dgvTable.Columns["colDelete"].Visible = false;
+                if (dgvTable.Columns.Contains("colEdit")) dgvTable.Columns["colEdit"].Visible = false;
+                if (dgvTable.Columns.Contains("colDelete")) dgvTable.Columns["colDelete"].Visible = false;
             }
         }
 
-        // ➕ Add new table
+        // ─── Load ───────────────────────────────────────────────────────────
+        private void LoadTables()
+        {
+            dgvTable.Rows.Clear();
+
+            // ✅ REPOSITORY PATTERN
+            var tables = _repo.GetAll();
+            int rowNo = 1;
+
+            foreach (var t in tables)
+            {
+                int rowIndex = dgvTable.Rows.Add(rowNo++, t.TableName, t.Capacity, t.Status);
+                dgvTable.Rows[rowIndex].Tag = new TableRowInfo(t.TableId);
+            }
+        }
+
+        // ─── Add ────────────────────────────────────────────────────────────
         private void btnAdd_Click(object sender, EventArgs e)
         {
             if (userRole != "(admin)")
@@ -81,83 +72,126 @@ namespace OOAD_Project
                 return;
             }
 
-            using (FormAddTable addForm = new FormAddTable())
+            using var addForm = new FormAddTable();
+            addForm.StartPosition = FormStartPosition.CenterParent;
+            if (addForm.ShowDialog(this) != DialogResult.OK) return;
+
+            var newTable = new Table
             {
-                addForm.StartPosition = FormStartPosition.CenterParent;
+                TableName = addForm.TableName,
+                Capacity = addForm.Capacity,
+                Status = addForm.Status
+            };
 
-                if (addForm.ShowDialog(this) == DialogResult.OK)
-                {
-                    string query = @"INSERT INTO tables (table_name, capacity, status)
-                                     VALUES (@name, @cap, @status)";
-                    Database.Execute(query,
-                        new NpgsqlParameter("@name", addForm.TableName),
-                        new NpgsqlParameter("@cap", addForm.Capacity),
-                        new NpgsqlParameter("@status", addForm.Status));
-
-                    LoadTables();
-                }
+            // ✅ COMMAND PATTERN (AddTableCommand)
+            var cmd = new AddTableCommand(newTable, _repo);
+            try
+            {
+                _invoker.ExecuteCommand(cmd);
+                LoadTables();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error adding table:\n" + ex.Message, "Error");
             }
         }
 
-        // ✏️ Edit or ❌ Delete
+        // ─── Edit / Delete cell click ───────────────────────────────────────
         private void dgvTable_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0)
-                return;
+            if (e.RowIndex < 0) return;
 
             string colName = dgvTable.Columns[e.ColumnIndex].Name;
+            if (colName != "colEdit" && colName != "colDelete") return;
 
-            if (userRole != "(admin)" && (colName == "colEdit" || colName == "colDelete"))
+            if (userRole != "(admin)")
             {
                 MessageBox.Show("Only admin users can modify or delete tables.",
                     "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            DataGridViewRow row = dgvTable.Rows[e.RowIndex];
-            TableRowInfo info = row.Tag is TableRowInfo t ? t : new TableRowInfo(-1);
+            var row = dgvTable.Rows[e.RowIndex];
+            var info = row.Tag is TableRowInfo t ? t : new TableRowInfo(-1);
             int tableId = info.TableId;
 
-            string tableName = row.Cells["colTable"].Value?.ToString() ?? string.Empty;
-            int capacity = Convert.ToInt32(row.Cells["colCapacity"].Value ?? 0);
-            string status = row.Cells["colStatus"].Value?.ToString() ?? "Available";
-
+            // ✅ EDIT → COMMAND PATTERN (UpdateTableCommand)
             if (colName == "colEdit")
             {
-                using (FormAddTable editForm = new FormAddTable(tableId, tableName, capacity, status))
+                // ✅ REPOSITORY PATTERN: fresh data from DB
+                var table = _repo.GetById(tableId);
+                if (table == null) return;
+
+                using var editForm = new FormAddTable(
+                    table.TableId, table.TableName, table.Capacity, table.Status);
+                editForm.StartPosition = FormStartPosition.CenterParent;
+                if (editForm.ShowDialog(this) != DialogResult.OK) return;
+
+                var updated = new Table
                 {
-                    editForm.StartPosition = FormStartPosition.CenterParent;
+                    TableId = table.TableId,
+                    TableName = editForm.TableName,
+                    Capacity = editForm.Capacity,
+                    Status = editForm.Status
+                };
 
-                    if (editForm.ShowDialog(this) == DialogResult.OK)
-                    {
-                        string query = @"UPDATE tables
-                                         SET table_name=@name, capacity=@cap, status=@status
-                                         WHERE table_id=@id";
-                        Database.Execute(query,
-                            new NpgsqlParameter("@name", editForm.TableName),
-                            new NpgsqlParameter("@cap", editForm.Capacity),
-                            new NpgsqlParameter("@status", editForm.Status),
-                            new NpgsqlParameter("@id", tableId));
-
-                        LoadTables();
-                    }
-                }
-            }
-            else if (colName == "colDelete")
-            {
-                var confirm = MessageBox.Show(
-                    $"Are you sure you want to delete '{tableName}'?",
-                    "Confirm Delete",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
-
-                if (confirm == DialogResult.Yes)
+                // ✅ COMMAND PATTERN
+                var cmd = new UpdateTableCommand(updated, _repo);
+                try
                 {
-                    string query = "DELETE FROM tables WHERE table_id = @id";
-                    Database.Execute(query, new NpgsqlParameter("@id", tableId));
+                    _invoker.ExecuteCommand(cmd);
                     LoadTables();
                 }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error updating table:\n" + ex.Message, "Error");
+                }
             }
+
+            // ✅ DELETE → COMMAND PATTERN (DeleteTableCommand)
+            else if (colName == "colDelete")
+            {
+                string tableName = row.Cells["colTable"].Value?.ToString() ?? "";
+                var confirm = MessageBox.Show(
+                    $"Are you sure you want to delete '{tableName}'?",
+                    "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+                if (confirm != DialogResult.Yes) return;
+
+                // ✅ COMMAND PATTERN
+                var cmd = new DeleteTableCommand(tableId, _repo);
+                try
+                {
+                    _invoker.ExecuteCommand(cmd);
+                    LoadTables();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error deleting table:\n" + ex.Message, "Error");
+                }
+            }
+        }
+
+        // ─── Undo / Redo (Ctrl+Z / Ctrl+Y) ─────────────────────────────────
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == (Keys.Control | Keys.Z)) { PerformUndo(); return true; }
+            if (keyData == (Keys.Control | Keys.Y)) { PerformRedo(); return true; }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void PerformUndo()
+        {
+            if (!_invoker.CanUndo) { MessageBox.Show("Nothing to undo."); return; }
+            try { _invoker.Undo(); LoadTables(); }
+            catch (Exception ex) { MessageBox.Show("Undo failed: " + ex.Message); }
+        }
+
+        private void PerformRedo()
+        {
+            if (!_invoker.CanRedo) { MessageBox.Show("Nothing to redo."); return; }
+            try { _invoker.Redo(); LoadTables(); }
+            catch (Exception ex) { MessageBox.Show("Redo failed: " + ex.Message); }
         }
     }
 }

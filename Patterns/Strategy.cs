@@ -1,6 +1,4 @@
-﻿using System;
-using System.Windows.Forms;
-using OOAD_Project.Domain;
+﻿using OOAD_Project.Domain;
 
 namespace OOAD_Project.Patterns
 {
