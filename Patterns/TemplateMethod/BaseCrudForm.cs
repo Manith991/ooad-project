@@ -7,14 +7,30 @@ using OOAD_Project.Patterns.Command;
 namespace OOAD_Project.Patterns.TemplateMethod
 {
     /// <summary>
-    /// TEMPLATE METHOD PATTERN - Base CRUD form
-    /// Defines the skeleton of CRUD operations with customizable steps
+    /// TEMPLATE METHOD PATTERN – Base CRUD form.
+    /// Defines the skeleton algorithm; subclasses fill in the steps.
+    ///
+    /// Skeleton:
+    ///   InitializeForm()
+    ///     ├── SetupEventHandlers()   (wires grid + add button)
+    ///     ├── LoadData()             ← ABSTRACT – each form loads its own data
+    ///     ├── RestrictActionsByRole()← virtual  – hides Edit/Delete for non-admins
+    ///     └── ShowCommandStatus()    (logs undo/redo counts)
+    ///
+    ///   CellContentClick             (routes to OnEdit / OnDelete)
+    ///     ├── OnEdit(entity)         ← ABSTRACT
+    ///     └── OnDelete(id)           ← ABSTRACT
+    ///
+    ///   ProcessCmdKey                (Ctrl+Z Undo / Ctrl+Y Redo) – built-in
     /// </summary>
     public abstract partial class BaseCrudForm<T> : Form where T : class
     {
+        // ── Controls assigned by subclass constructor before InitializeForm() ──
+        protected DataGridView dataGridView = null!;
+        protected Button btnAdd = null!;
+
+        // ── Shared infrastructure ──────────────────────────────────────────
         protected readonly string userRole;
-        protected DataGridView dataGridView;
-        protected Button btnAdd;
         protected readonly CommandInvoker commandInvoker;
 
         protected BaseCrudForm(string userRole)
@@ -23,12 +39,9 @@ namespace OOAD_Project.Patterns.TemplateMethod
             this.commandInvoker = new CommandInvoker(maxHistorySize: 50);
         }
 
-        #region Template Method - Main workflow
-
-        /// <summary>
-        /// TEMPLATE METHOD - Initialize form (main algorithm)
-        /// This method defines the skeleton of the initialization process
-        /// </summary>
+        // ══════════════════════════════════════════════════════════════════
+        // TEMPLATE METHOD – main skeleton (call from subclass constructor)
+        // ══════════════════════════════════════════════════════════════════
         protected void InitializeForm()
         {
             SetupEventHandlers();
@@ -37,42 +50,30 @@ namespace OOAD_Project.Patterns.TemplateMethod
             ShowCommandStatus();
         }
 
-        #endregion
+        // ══════════════════════════════════════════════════════════════════
+        // ABSTRACT STEPS – must be implemented by every subclass
+        // ══════════════════════════════════════════════════════════════════
 
-        #region Abstract Methods - Must be implemented by subclasses
-
-        /// <summary>
-        /// Load data into the grid
-        /// </summary>
+        /// <summary>Pull records from repository and populate the grid.</summary>
         protected abstract void LoadData();
 
-        /// <summary>
-        /// Handle edit operation
-        /// </summary>
+        /// <summary>Show edit dialog and persist changes via a Command.</summary>
         protected abstract void OnEdit(T entity);
 
-        /// <summary>
-        /// Handle delete operation
-        /// </summary>
+        /// <summary>Confirm and delete the record via a Command.</summary>
         protected abstract void OnDelete(int id);
 
-        /// <summary>
-        /// Get entity from DataGridView row
-        /// </summary>
+        /// <summary>Build a domain object from the selected DataGridView row.</summary>
         protected abstract T GetEntityFromRow(DataGridViewRow row);
 
-        /// <summary>
-        /// Get entity ID from row
-        /// </summary>
+        /// <summary>Return the primary key stored in the selected row.</summary>
         protected abstract int GetEntityId(DataGridViewRow row);
 
-        #endregion
+        // ══════════════════════════════════════════════════════════════════
+        // VIRTUAL STEPS – subclasses may override if needed
+        // ══════════════════════════════════════════════════════════════════
 
-        #region Virtual Methods - Can be overridden
-
-        /// <summary>
-        /// Setup event handlers (can be overridden)
-        /// </summary>
+        /// <summary>Wire the DataGridView cell-click and Add button.</summary>
         protected virtual void SetupEventHandlers()
         {
             if (dataGridView != null)
@@ -88,36 +89,24 @@ namespace OOAD_Project.Patterns.TemplateMethod
             }
         }
 
-        /// <summary>
-        /// Restrict UI based on user role
-        /// </summary>
+        /// <summary>Hide Edit/Delete columns and disable Add for non-admins.</summary>
         protected virtual void RestrictActionsByRole()
         {
-            if (userRole != "(admin)")
+            if (userRole == "(admin)") return;
+
+            if (btnAdd != null) btnAdd.Enabled = false;
+
+            if (dataGridView != null)
             {
-                // Hide Add button for non-admins
-                if (btnAdd != null)
-                {
-                    btnAdd.Enabled = false;
-                    btnAdd.Visible = false;
-                }
-
-                // Hide Edit/Delete columns
-                if (dataGridView != null)
-                {
-                    if (dataGridView.Columns.Contains("colEdit"))
-                        dataGridView.Columns["colEdit"].Visible = false;
-
-                    if (dataGridView.Columns.Contains("colDelete"))
-                        dataGridView.Columns["colDelete"].Visible = false;
-                }
+                if (dataGridView.Columns.Contains("colEdit"))
+                    dataGridView.Columns["colEdit"].Visible = false;
+                if (dataGridView.Columns.Contains("colDelete"))
+                    dataGridView.Columns["colDelete"].Visible = false;
             }
         }
 
-        /// <summary>
-        /// Handle Add button click
-        /// </summary>
-        protected virtual void OnAddClick(object sender, EventArgs e)
+        /// <summary>Handle Add button – subclasses override to show their dialog.</summary>
+        protected virtual void OnAddClick(object? sender, EventArgs e)
         {
             if (userRole != "(admin)")
             {
@@ -126,21 +115,18 @@ namespace OOAD_Project.Patterns.TemplateMethod
             }
         }
 
-        #endregion
+        // ══════════════════════════════════════════════════════════════════
+        // CONCRETE STEPS – same for every form, no override needed
+        // ══════════════════════════════════════════════════════════════════
 
-        #region Event Handlers
-
-        /// <summary>
-        /// Handle cell click for Edit/Delete operations
-        /// </summary>
-        private void DataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        /// <summary>Routes Edit/Delete cell clicks to the correct abstract step.</summary>
+        private void DataGridView_CellContentClick(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0) return;
 
-            string columnName = dataGridView.Columns[e.ColumnIndex].Name;
-            DataGridViewRow row = dataGridView.Rows[e.RowIndex];
+            string colName = dataGridView.Columns[e.ColumnIndex].Name;
+            if (colName != "colEdit" && colName != "colDelete") return;
 
-            // Check admin permission
             if (userRole != "(admin)")
             {
                 MessageBox.Show("Only admins can modify or delete items.", "Access Denied",
@@ -148,112 +134,116 @@ namespace OOAD_Project.Patterns.TemplateMethod
                 return;
             }
 
-            T entity = GetEntityFromRow(row);
-            int id = GetEntityId(row);
+            DataGridViewRow row = dataGridView.Rows[e.RowIndex];
 
-            if (columnName == "colEdit")
+            if (colName == "colEdit")
             {
-                OnEdit(entity);
+                T entity = GetEntityFromRow(row);
+                if (entity != null) OnEdit(entity);
             }
-            else if (columnName == "colDelete")
+            else
             {
+                int id = GetEntityId(row);
+                if (id < 0) return;
+
                 var confirm = MessageBox.Show(
                     "Are you sure you want to delete this item?",
-                    "Confirm Delete",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
+                    "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
 
                 if (confirm == DialogResult.Yes)
-                {
                     OnDelete(id);
-                }
             }
         }
 
-        #endregion
-
-        #region Helper Methods
-
-        /// <summary>
-        /// Load image from file path with fallback
-        /// </summary>
-        protected Image LoadImage(string imagePath, string subfolder = "")
+        // ── Undo / Redo – built-in for every subclass ─────────────────────
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (string.IsNullOrEmpty(imagePath))
-                return GetDefaultImage();
+            if (keyData == (Keys.Control | Keys.Z)) { PerformUndo(); return true; }
+            if (keyData == (Keys.Control | Keys.Y)) { PerformRedo(); return true; }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
 
-            string[] possiblePaths = string.IsNullOrEmpty(subfolder)
-                ? new[]
-                {
-                    imagePath,
-                    Path.Combine(Application.StartupPath, "Resources", imagePath),
-                    Path.Combine(Application.StartupPath, "Resources", imagePath + ".png"),
-                    Path.Combine(Application.StartupPath, "Resources", imagePath + ".jpg"),
-                    Path.Combine(Application.StartupPath, "Resources", imagePath + ".jpeg")
-                }
-                : new[]
-                {
-                    imagePath,
-                    Path.Combine(Application.StartupPath, "Resources", subfolder, imagePath),
-                    Path.Combine(Application.StartupPath, "Resources", subfolder, imagePath + ".png"),
-                    Path.Combine(Application.StartupPath, "Resources", subfolder, imagePath + ".jpg"),
-                    Path.Combine(Application.StartupPath, "Resources", subfolder, imagePath + ".jpeg")
-                };
-
-            foreach (var path in possiblePaths)
+        private void PerformUndo()
+        {
+            if (!commandInvoker.CanUndo)
             {
-                if (File.Exists(path))
-                {
-                    try
-                    {
-                        return Image.FromFile(path);
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-                }
+                MessageBox.Show("Nothing to undo.", "Undo",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            try
+            {
+                string desc = commandInvoker.GetUndoDescription();
+                commandInvoker.Undo();
+                LoadData();
+                MessageBox.Show($"Undid: {desc}", "Undo",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Undo failed: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void PerformRedo()
+        {
+            if (!commandInvoker.CanRedo)
+            {
+                MessageBox.Show("Nothing to redo.", "Redo",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            try
+            {
+                string desc = commandInvoker.GetRedoDescription();
+                commandInvoker.Redo();
+                LoadData();
+                MessageBox.Show($"Redid: {desc}", "Redo",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Redo failed: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────
+        protected void ShowCommandStatus() =>
+            Console.WriteLine($"[{GetType().Name}] Undo:{commandInvoker.UndoCount} Redo:{commandInvoker.RedoCount}");
+
+        protected Image? LoadImage(string? imagePath, string subfolder = "")
+        {
+            if (string.IsNullOrEmpty(imagePath)) return GetDefaultImage();
+
+            string resBase = Path.Combine(Application.StartupPath, "Resources");
+            string sub = string.IsNullOrEmpty(subfolder)
+                                 ? resBase
+                                 : Path.Combine(resBase, subfolder);
+
+            string[] paths =
+            {
+                imagePath,
+                Path.Combine(sub, imagePath),
+                Path.Combine(sub, imagePath + ".png"),
+                Path.Combine(sub, imagePath + ".jpg"),
+                Path.Combine(sub, imagePath + ".jpeg")
+            };
+
+            foreach (var p in paths)
+            {
+                try { if (File.Exists(p)) return Image.FromFile(p); }
+                catch { /* skip */ }
             }
 
             return GetDefaultImage();
         }
 
-        /// <summary>
-        /// Get default placeholder image
-        /// </summary>
-        protected Image GetDefaultImage()
+        protected Image? GetDefaultImage()
         {
-            string defaultPath = Path.Combine(Application.StartupPath, "Resources", "no_image.png");
-            if (File.Exists(defaultPath))
-            {
-                try
-                {
-                    return Image.FromFile(defaultPath);
-                }
-                catch { }
-            }
-
-            // Return a simple placeholder bitmap if no default image exists
-            Bitmap placeholder = new Bitmap(100, 100);
-            using (Graphics g = Graphics.FromImage(placeholder))
-            {
-                g.Clear(Color.LightGray);
-                using (Font font = new Font("Arial", 10))
-                {
-                    g.DrawString("No Image", font, Brushes.DarkGray, 10, 40);
-                }
-            }
-            return placeholder;
+            string def = Path.Combine(Application.StartupPath, "Resources", "no_image.png");
+            return File.Exists(def) ? Image.FromFile(def) : null;
         }
-
-        /// <summary>
-        /// Show command history status
-        /// </summary>
-        protected void ShowCommandStatus()
-        {
-            Console.WriteLine($"[BaseCrudForm] Undo: {commandInvoker.UndoCount}, Redo: {commandInvoker.RedoCount}");
-        }
-
-        #endregion
     }
 }

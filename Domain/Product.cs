@@ -8,8 +8,6 @@
         public decimal Price { get; set; }
         public string? ImagePath { get; set; }
         public bool IsAvailable { get; set; } = true;
-
-        // Navigation properties
         public string CategoryName { get; set; } = string.Empty;
     }
 }

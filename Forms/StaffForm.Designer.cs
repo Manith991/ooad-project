@@ -109,7 +109,7 @@
             dgvStaff.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvStaff.Size = new Size(1360, 811);
             dgvStaff.TabIndex = 7;
-            dgvStaff.CellContentClick += dgvStaff_CellContentClick;
+            //dgvStaff.CellContentClick += dgvStaff_CellContentClick;
             // 
             // colNo
             // 

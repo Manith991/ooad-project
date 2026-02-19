@@ -70,4 +70,3 @@ D:\RUPP\OOAD\OOAD_Project\OOAD_Project\obj\Debug\net8.0-windows\OOAD_Project.For
 D:\RUPP\OOAD\OOAD_Project\OOAD_Project\bin\Debug\net8.0-windows\Resources\Foods\restaurant logo.png
 D:\RUPP\OOAD\OOAD_Project\OOAD_Project\obj\Debug\net8.0-windows\OOAD_Project.sourcelink.json
 D:\RUPP\OOAD\OOAD_Project\OOAD_Project\obj\Debug\net8.0-windows\OOAD_Project.FormProductCustomization.resources
-D:\RUPP\OOAD\OOAD_Project\OOAD_Project\obj\Debug\net8.0-windows\OOAD_Project.Patterns.TemplateMethod.BaseCrudForm.resources

@@ -80,7 +80,7 @@
             btnAdd.ShadowDecoration.CustomizableEdges = customizableEdges4;
             btnAdd.Size = new Size(70, 70);
             btnAdd.TabIndex = 5;
-            btnAdd.Click += btnAdd_Click;
+            //btnAdd.Click += btnAdd_Click;
             // 
             // panel2
             // 
@@ -140,7 +140,7 @@
             dgvTable.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvTable.Size = new Size(1360, 811);
             dgvTable.TabIndex = 7;
-            dgvTable.CellContentClick += dgvTable_CellContentClick;
+            //dgvTable.CellContentClick += dgvTable_CellContentClick;
             // 
             // colNo
             // 

@@ -111,7 +111,7 @@
             dgvProduct.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvProduct.Size = new Size(1360, 811);
             dgvProduct.TabIndex = 7;
-            dgvProduct.CellContentClick += dgvProduct_CellContentClick;
+            //dgvProduct.CellContentClick += dgvProduct_CellContentClick;
             // 
             // colNo
             // 
@@ -206,7 +206,7 @@
             btnAdd.ShadowDecoration.CustomizableEdges = customizableEdges2;
             btnAdd.Size = new Size(70, 70);
             btnAdd.TabIndex = 5;
-            btnAdd.Click += btnAdd_Click;
+            //btnAdd.Click += btnAdd_Click;
             // 
             // label1
             // 
