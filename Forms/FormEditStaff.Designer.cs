@@ -238,6 +238,7 @@ namespace OOAD_Project
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.White;
             ClientSize = new Size(631, 494);
             Controls.Add(pbImage);
             Controls.Add(cbRole);
@@ -249,6 +250,7 @@ namespace OOAD_Project
             Controls.Add(label2);
             Controls.Add(panel2);
             Controls.Add(panel1);
+            DoubleBuffered = true;
             FormBorderStyle = FormBorderStyle.None;
             Name = "FormEditStaff";
             Text = "FormAddStaff";
@@ -258,6 +260,20 @@ namespace OOAD_Project
             ((System.ComponentModel.ISupportInitialize)pbImage).EndInit();
             ResumeLayout(false);
             PerformLayout();
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+
+            using (Pen pen = new Pen(Color.Black, 2))
+            {
+                Rectangle rect = this.ClientRectangle;
+                rect.Width -= 1;
+                rect.Height -= 1;
+
+                e.Graphics.DrawRectangle(pen, rect);
+            }
         }
 
         #endregion

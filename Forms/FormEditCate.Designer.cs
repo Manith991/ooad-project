@@ -202,6 +202,7 @@
             Controls.Add(pbIcon);
             Controls.Add(panel2);
             Controls.Add(panel1);
+            DoubleBuffered = true;
             FormBorderStyle = FormBorderStyle.None;
             Name = "FormEditCate";
             StartPosition = FormStartPosition.CenterScreen;
@@ -212,6 +213,20 @@
             ((System.ComponentModel.ISupportInitialize)pbIcon).EndInit();
             ResumeLayout(false);
             PerformLayout();
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+
+            using (Pen pen = new Pen(Color.Black, 2))
+            {
+                Rectangle rect = this.ClientRectangle;
+                rect.Width -= 1;
+                rect.Height -= 1;
+
+                e.Graphics.DrawRectangle(pen, rect);
+            }
         }
 
         #endregion

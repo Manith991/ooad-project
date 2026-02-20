@@ -2,347 +2,563 @@
 {
     partial class FormDetailRecord
     {
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
-            {
                 components.Dispose();
-            }
             base.Dispose(disposing);
         }
 
         #region Windows Form Designer generated code
 
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
         private void InitializeComponent()
         {
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
             Guna.UI2.WinForms.Suite.CustomizableEdges customizableEdges1 = new Guna.UI2.WinForms.Suite.CustomizableEdges();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormDetailRecord));
             Guna.UI2.WinForms.Suite.CustomizableEdges customizableEdges2 = new Guna.UI2.WinForms.Suite.CustomizableEdges();
             Guna.UI2.WinForms.Suite.CustomizableEdges customizableEdges3 = new Guna.UI2.WinForms.Suite.CustomizableEdges();
-            panel1 = new Panel();
-            guna2Button1 = new Guna.UI2.WinForms.Guna2Button();
-            label1 = new Label();
-            btnClose = new Guna.UI2.WinForms.Guna2ImageButton();
-            panel2 = new Panel();
+            Guna.UI2.WinForms.Suite.CustomizableEdges customizableEdges4 = new Guna.UI2.WinForms.Suite.CustomizableEdges();
+            Guna.UI2.WinForms.Suite.CustomizableEdges customizableEdges6 = new Guna.UI2.WinForms.Suite.CustomizableEdges();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormDetailRecord));
+            Guna.UI2.WinForms.Suite.CustomizableEdges customizableEdges5 = new Guna.UI2.WinForms.Suite.CustomizableEdges();
+            pnlSidebar = new Panel();
+            pnlSidebarAccent = new Panel();
+            lblSidebarTitle = new Label();
+            lblSidebarSub = new Label();
+            pnlSidebarDivider = new Panel();
+            lblSB_OrderIdCap = new Label();
             lblID = new Label();
+            lblSB_TableCap = new Label();
             lblTable = new Label();
+            lblSB_StaffCap = new Label();
             lblStaff = new Label();
+            lblSB_TypeCap = new Label();
             lblType = new Label();
+            lblSB_DateCap = new Label();
             lblDate = new Label();
-            lblTotal = new Label();
+            lblSB_StatusCap = new Label();
             lblStatus = new Label();
-            label2 = new Label();
-            label3 = new Label();
-            label4 = new Label();
-            label5 = new Label();
-            label6 = new Label();
-            label7 = new Label();
-            label8 = new Label();
+            pnlMain = new Panel();
             flowPanelProducts = new FlowLayoutPanel();
-            panel1.SuspendLayout();
-            panel2.SuspendLayout();
+            pnlTotalStrip = new Panel();
+            lblTotalLabel = new Label();
+            lblTotal = new Label();
+            pnlFooter = new Panel();
+            btnPrint = new Guna.UI2.WinForms.Guna2Button();
+            btnDone = new Guna.UI2.WinForms.Guna2Button();
+            pnlTableHeader = new Panel();
+            lblColItem = new Label();
+            lblColQty = new Label();
+            lblColPrice = new Label();
+            lblColSubtotal = new Label();
+            pnlMainHeader = new Panel();
+            lblMainTitle = new Label();
+            btnClose = new Guna.UI2.WinForms.Guna2ImageButton();
+            pnlMainHeaderLine = new Panel();
+            guna2ImageButton1 = new Guna.UI2.WinForms.Guna2ImageButton();
+            pnlSidebar.SuspendLayout();
+            pnlMain.SuspendLayout();
+            pnlTotalStrip.SuspendLayout();
+            pnlFooter.SuspendLayout();
+            pnlTableHeader.SuspendLayout();
+            pnlMainHeader.SuspendLayout();
             SuspendLayout();
             // 
-            // panel1
+            // pnlSidebar
             // 
-            panel1.BackColor = Color.Black;
-            panel1.Controls.Add(guna2Button1);
-            panel1.Controls.Add(label1);
-            panel1.Controls.Add(btnClose);
-            panel1.Dock = DockStyle.Top;
-            panel1.Location = new Point(0, 0);
-            panel1.Name = "panel1";
-            panel1.Size = new Size(578, 80);
-            panel1.TabIndex = 0;
+            pnlSidebar.BackColor = Color.FromArgb(10, 18, 42);
+            pnlSidebar.Controls.Add(pnlSidebarAccent);
+            pnlSidebar.Controls.Add(lblSidebarTitle);
+            pnlSidebar.Controls.Add(lblSidebarSub);
+            pnlSidebar.Controls.Add(pnlSidebarDivider);
+            pnlSidebar.Controls.Add(lblSB_OrderIdCap);
+            pnlSidebar.Controls.Add(lblID);
+            pnlSidebar.Controls.Add(lblSB_TableCap);
+            pnlSidebar.Controls.Add(lblTable);
+            pnlSidebar.Controls.Add(lblSB_StaffCap);
+            pnlSidebar.Controls.Add(lblStaff);
+            pnlSidebar.Controls.Add(lblSB_TypeCap);
+            pnlSidebar.Controls.Add(lblType);
+            pnlSidebar.Controls.Add(lblSB_DateCap);
+            pnlSidebar.Controls.Add(lblDate);
+            pnlSidebar.Controls.Add(lblSB_StatusCap);
+            pnlSidebar.Controls.Add(lblStatus);
+            pnlSidebar.Dock = DockStyle.Left;
+            pnlSidebar.Location = new Point(0, 0);
+            pnlSidebar.Name = "pnlSidebar";
+            pnlSidebar.Size = new Size(210, 616);
+            pnlSidebar.TabIndex = 1;
             // 
-            // guna2Button1
+            // pnlSidebarAccent
             // 
-            guna2Button1.BorderColor = Color.White;
-            guna2Button1.BorderRadius = 10;
-            guna2Button1.BorderThickness = 2;
-            guna2Button1.CustomizableEdges = customizableEdges1;
-            guna2Button1.DisabledState.BorderColor = Color.DarkGray;
-            guna2Button1.DisabledState.CustomBorderColor = Color.DarkGray;
-            guna2Button1.DisabledState.FillColor = Color.FromArgb(169, 169, 169);
-            guna2Button1.DisabledState.ForeColor = Color.FromArgb(141, 141, 141);
-            guna2Button1.FillColor = Color.Black;
-            guna2Button1.Font = new Font("Segoe UI", 9F);
-            guna2Button1.ForeColor = Color.White;
-            guna2Button1.Image = (Image)resources.GetObject("guna2Button1.Image");
-            guna2Button1.ImageSize = new Size(45, 45);
-            guna2Button1.Location = new Point(16, 14);
-            guna2Button1.Margin = new Padding(0);
-            guna2Button1.Name = "guna2Button1";
-            guna2Button1.ShadowDecoration.CustomizableEdges = customizableEdges2;
-            guna2Button1.Size = new Size(50, 50);
-            guna2Button1.TabIndex = 5;
+            pnlSidebarAccent.BackColor = Color.FromArgb(30, 120, 255);
+            pnlSidebarAccent.Dock = DockStyle.Top;
+            pnlSidebarAccent.Location = new Point(0, 0);
+            pnlSidebarAccent.Name = "pnlSidebarAccent";
+            pnlSidebarAccent.Size = new Size(210, 14);
+            pnlSidebarAccent.TabIndex = 0;
             // 
-            // label1
+            // lblSidebarTitle
             // 
-            label1.AutoSize = true;
-            label1.Font = new Font("Segoe UI", 12F);
-            label1.ForeColor = Color.White;
-            label1.Location = new Point(68, 22);
-            label1.Name = "label1";
-            label1.Size = new Size(166, 32);
-            label1.TabIndex = 2;
-            label1.Text = "Records Detail";
+            lblSidebarTitle.Font = new Font("Georgia", 16F, FontStyle.Bold);
+            lblSidebarTitle.ForeColor = Color.FromArgb(220, 235, 255);
+            lblSidebarTitle.Location = new Point(18, 27);
+            lblSidebarTitle.Name = "lblSidebarTitle";
+            lblSidebarTitle.Size = new Size(172, 38);
+            lblSidebarTitle.TabIndex = 1;
+            lblSidebarTitle.Text = "ORDER";
             // 
-            // btnClose
+            // lblSidebarSub
             // 
-            btnClose.CheckedState.ImageSize = new Size(64, 64);
-            btnClose.HoverState.ImageSize = new Size(64, 64);
-            btnClose.Image = (Image)resources.GetObject("btnClose.Image");
-            btnClose.ImageOffset = new Point(0, 0);
-            btnClose.ImageRotate = 0F;
-            btnClose.ImageSize = new Size(50, 50);
-            btnClose.Location = new Point(512, 3);
-            btnClose.Name = "btnClose";
-            btnClose.PressedState.ImageSize = new Size(64, 64);
-            btnClose.ShadowDecoration.CustomizableEdges = customizableEdges3;
-            btnClose.Size = new Size(66, 66);
-            btnClose.TabIndex = 1;
-            btnClose.Click += btnClose_Click;
+            lblSidebarSub.Font = new Font("Segoe UI", 8F);
+            lblSidebarSub.ForeColor = Color.FromArgb(80, 145, 230);
+            lblSidebarSub.Location = new Point(18, 70);
+            lblSidebarSub.Name = "lblSidebarSub";
+            lblSidebarSub.Size = new Size(185, 20);
+            lblSidebarSub.TabIndex = 2;
+            lblSidebarSub.Text = "Record Details";
             // 
-            // panel2
+            // pnlSidebarDivider
             // 
-            panel2.BackColor = Color.White;
-            panel2.Controls.Add(lblID);
-            panel2.Controls.Add(lblTable);
-            panel2.Controls.Add(lblStaff);
-            panel2.Controls.Add(lblType);
-            panel2.Controls.Add(lblDate);
-            panel2.Controls.Add(lblTotal);
-            panel2.Controls.Add(lblStatus);
-            panel2.Controls.Add(label2);
-            panel2.Controls.Add(label3);
-            panel2.Controls.Add(label4);
-            panel2.Controls.Add(label5);
-            panel2.Controls.Add(label6);
-            panel2.Controls.Add(label7);
-            panel2.Controls.Add(label8);
-            panel2.Dock = DockStyle.Top;
-            panel2.Location = new Point(0, 80);
-            panel2.Name = "panel2";
-            panel2.Size = new Size(578, 319);
-            panel2.TabIndex = 29;
+            pnlSidebarDivider.BackColor = Color.FromArgb(30, 55, 110);
+            pnlSidebarDivider.Location = new Point(18, 104);
+            pnlSidebarDivider.Name = "pnlSidebarDivider";
+            pnlSidebarDivider.Size = new Size(170, 1);
+            pnlSidebarDivider.TabIndex = 3;
+            // 
+            // lblSB_OrderIdCap
+            // 
+            lblSB_OrderIdCap.Font = new Font("Segoe UI", 7.5F, FontStyle.Bold);
+            lblSB_OrderIdCap.ForeColor = Color.FromArgb(80, 145, 230);
+            lblSB_OrderIdCap.Location = new Point(18, 133);
+            lblSB_OrderIdCap.Name = "lblSB_OrderIdCap";
+            lblSB_OrderIdCap.Size = new Size(172, 16);
+            lblSB_OrderIdCap.TabIndex = 4;
+            lblSB_OrderIdCap.Text = "ORDER ID";
             // 
             // lblID
             // 
-            lblID.AutoSize = true;
-            lblID.Font = new Font("Segoe UI", 11F);
-            lblID.ForeColor = Color.Black;
-            lblID.Location = new Point(150, 18);
+            lblID.Font = new Font("Segoe UI", 9.5F);
+            lblID.ForeColor = Color.FromArgb(210, 228, 255);
+            lblID.Location = new Point(18, 150);
             lblID.Name = "lblID";
-            lblID.Size = new Size(71, 30);
-            lblID.TabIndex = 36;
-            lblID.Text = "label1";
+            lblID.Size = new Size(172, 24);
+            lblID.TabIndex = 5;
+            lblID.Text = "—";
+            // 
+            // lblSB_TableCap
+            // 
+            lblSB_TableCap.Font = new Font("Segoe UI", 7.5F, FontStyle.Bold);
+            lblSB_TableCap.ForeColor = Color.FromArgb(80, 145, 230);
+            lblSB_TableCap.Location = new Point(18, 188);
+            lblSB_TableCap.Name = "lblSB_TableCap";
+            lblSB_TableCap.Size = new Size(172, 16);
+            lblSB_TableCap.TabIndex = 6;
+            lblSB_TableCap.Text = "TABLE";
             // 
             // lblTable
             // 
-            lblTable.AutoSize = true;
-            lblTable.Font = new Font("Segoe UI", 11F);
-            lblTable.ForeColor = Color.Black;
-            lblTable.Location = new Point(150, 58);
+            lblTable.Font = new Font("Segoe UI", 9.5F);
+            lblTable.ForeColor = Color.FromArgb(210, 228, 255);
+            lblTable.Location = new Point(18, 205);
             lblTable.Name = "lblTable";
-            lblTable.Size = new Size(71, 30);
-            lblTable.TabIndex = 37;
-            lblTable.Text = "label2";
+            lblTable.Size = new Size(172, 24);
+            lblTable.TabIndex = 7;
+            lblTable.Text = "—";
+            // 
+            // lblSB_StaffCap
+            // 
+            lblSB_StaffCap.Font = new Font("Segoe UI", 7.5F, FontStyle.Bold);
+            lblSB_StaffCap.ForeColor = Color.FromArgb(80, 145, 230);
+            lblSB_StaffCap.Location = new Point(18, 243);
+            lblSB_StaffCap.Name = "lblSB_StaffCap";
+            lblSB_StaffCap.Size = new Size(172, 16);
+            lblSB_StaffCap.TabIndex = 8;
+            lblSB_StaffCap.Text = "STAFF";
             // 
             // lblStaff
             // 
-            lblStaff.AutoSize = true;
-            lblStaff.Font = new Font("Segoe UI", 11F);
-            lblStaff.ForeColor = Color.Black;
-            lblStaff.Location = new Point(150, 98);
+            lblStaff.Font = new Font("Segoe UI", 9.5F);
+            lblStaff.ForeColor = Color.FromArgb(210, 228, 255);
+            lblStaff.Location = new Point(18, 260);
             lblStaff.Name = "lblStaff";
-            lblStaff.Size = new Size(71, 30);
-            lblStaff.TabIndex = 38;
-            lblStaff.Text = "label3";
+            lblStaff.Size = new Size(172, 24);
+            lblStaff.TabIndex = 9;
+            lblStaff.Text = "—";
+            // 
+            // lblSB_TypeCap
+            // 
+            lblSB_TypeCap.Font = new Font("Segoe UI", 7.5F, FontStyle.Bold);
+            lblSB_TypeCap.ForeColor = Color.FromArgb(80, 145, 230);
+            lblSB_TypeCap.Location = new Point(18, 298);
+            lblSB_TypeCap.Name = "lblSB_TypeCap";
+            lblSB_TypeCap.Size = new Size(172, 16);
+            lblSB_TypeCap.TabIndex = 10;
+            lblSB_TypeCap.Text = "TYPE";
             // 
             // lblType
             // 
-            lblType.AutoSize = true;
-            lblType.Font = new Font("Segoe UI", 11F);
-            lblType.ForeColor = Color.Black;
-            lblType.Location = new Point(150, 138);
+            lblType.Font = new Font("Segoe UI", 9.5F);
+            lblType.ForeColor = Color.FromArgb(210, 228, 255);
+            lblType.Location = new Point(18, 315);
             lblType.Name = "lblType";
-            lblType.Size = new Size(71, 30);
-            lblType.TabIndex = 39;
-            lblType.Text = "label4";
+            lblType.Size = new Size(172, 24);
+            lblType.TabIndex = 11;
+            lblType.Text = "—";
+            // 
+            // lblSB_DateCap
+            // 
+            lblSB_DateCap.Font = new Font("Segoe UI", 7.5F, FontStyle.Bold);
+            lblSB_DateCap.ForeColor = Color.FromArgb(80, 145, 230);
+            lblSB_DateCap.Location = new Point(18, 353);
+            lblSB_DateCap.Name = "lblSB_DateCap";
+            lblSB_DateCap.Size = new Size(172, 16);
+            lblSB_DateCap.TabIndex = 12;
+            lblSB_DateCap.Text = "DATE";
             // 
             // lblDate
             // 
-            lblDate.AutoSize = true;
-            lblDate.Font = new Font("Segoe UI", 11F);
-            lblDate.ForeColor = Color.Black;
-            lblDate.Location = new Point(150, 178);
+            lblDate.Font = new Font("Segoe UI", 9.5F);
+            lblDate.ForeColor = Color.FromArgb(210, 228, 255);
+            lblDate.Location = new Point(18, 370);
             lblDate.Name = "lblDate";
-            lblDate.Size = new Size(71, 30);
-            lblDate.TabIndex = 40;
-            lblDate.Text = "label5";
+            lblDate.Size = new Size(172, 24);
+            lblDate.TabIndex = 13;
+            lblDate.Text = "—";
             // 
-            // lblTotal
+            // lblSB_StatusCap
             // 
-            lblTotal.AutoSize = true;
-            lblTotal.Font = new Font("Segoe UI", 11F);
-            lblTotal.ForeColor = Color.Black;
-            lblTotal.Location = new Point(150, 218);
-            lblTotal.Name = "lblTotal";
-            lblTotal.Size = new Size(71, 30);
-            lblTotal.TabIndex = 41;
-            lblTotal.Text = "label6";
+            lblSB_StatusCap.Font = new Font("Segoe UI", 7.5F, FontStyle.Bold);
+            lblSB_StatusCap.ForeColor = Color.FromArgb(80, 145, 230);
+            lblSB_StatusCap.Location = new Point(18, 408);
+            lblSB_StatusCap.Name = "lblSB_StatusCap";
+            lblSB_StatusCap.Size = new Size(172, 16);
+            lblSB_StatusCap.TabIndex = 14;
+            lblSB_StatusCap.Text = "STATUS";
             // 
             // lblStatus
             // 
-            lblStatus.AutoSize = true;
-            lblStatus.Font = new Font("Segoe UI", 11F);
-            lblStatus.ForeColor = Color.Black;
-            lblStatus.Location = new Point(150, 258);
+            lblStatus.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            lblStatus.ForeColor = Color.FromArgb(210, 228, 255);
+            lblStatus.Location = new Point(18, 425);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new Size(71, 30);
-            lblStatus.TabIndex = 42;
-            lblStatus.Text = "label7";
+            lblStatus.Size = new Size(172, 24);
+            lblStatus.TabIndex = 15;
+            lblStatus.Text = "—";
             // 
-            // label2
+            // pnlMain
             // 
-            label2.AutoSize = true;
-            label2.Font = new Font("Segoe UI", 11F);
-            label2.ForeColor = Color.Black;
-            label2.Location = new Point(16, 18);
-            label2.Name = "label2";
-            label2.Size = new Size(103, 30);
-            label2.TabIndex = 29;
-            label2.Text = "Order ID:";
-            // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Font = new Font("Segoe UI", 11F);
-            label3.ForeColor = Color.Black;
-            label3.Location = new Point(16, 58);
-            label3.Name = "label3";
-            label3.Size = new Size(133, 30);
-            label3.TabIndex = 30;
-            label3.Text = "Table Name:";
-            // 
-            // label4
-            // 
-            label4.AutoSize = true;
-            label4.Font = new Font("Segoe UI", 11F);
-            label4.ForeColor = Color.Black;
-            label4.Location = new Point(16, 98);
-            label4.Name = "label4";
-            label4.Size = new Size(125, 30);
-            label4.TabIndex = 31;
-            label4.Text = "Staff Name:";
-            // 
-            // label5
-            // 
-            label5.AutoSize = true;
-            label5.Font = new Font("Segoe UI", 11F);
-            label5.ForeColor = Color.Black;
-            label5.Location = new Point(16, 138);
-            label5.Name = "label5";
-            label5.Size = new Size(129, 30);
-            label5.TabIndex = 32;
-            label5.Text = "Order Type:";
-            // 
-            // label6
-            // 
-            label6.AutoSize = true;
-            label6.Font = new Font("Segoe UI", 11F);
-            label6.ForeColor = Color.Black;
-            label6.Location = new Point(16, 178);
-            label6.Name = "label6";
-            label6.Size = new Size(127, 30);
-            label6.TabIndex = 33;
-            label6.Text = "Order Date:";
-            // 
-            // label7
-            // 
-            label7.AutoSize = true;
-            label7.Font = new Font("Segoe UI", 11F);
-            label7.ForeColor = Color.Black;
-            label7.Location = new Point(16, 218);
-            label7.Name = "label7";
-            label7.Size = new Size(64, 30);
-            label7.TabIndex = 34;
-            label7.Text = "Total:";
-            // 
-            // label8
-            // 
-            label8.AutoSize = true;
-            label8.Font = new Font("Segoe UI", 11F);
-            label8.ForeColor = Color.Black;
-            label8.Location = new Point(16, 258);
-            label8.Name = "label8";
-            label8.Size = new Size(75, 30);
-            label8.TabIndex = 35;
-            label8.Text = "Status:";
+            pnlMain.BackColor = Color.FromArgb(245, 248, 255);
+            pnlMain.BorderStyle = BorderStyle.FixedSingle;
+            pnlMain.Controls.Add(flowPanelProducts);
+            pnlMain.Controls.Add(pnlTotalStrip);
+            pnlMain.Controls.Add(pnlFooter);
+            pnlMain.Controls.Add(pnlTableHeader);
+            pnlMain.Controls.Add(pnlMainHeader);
+            pnlMain.Dock = DockStyle.Fill;
+            pnlMain.Location = new Point(210, 0);
+            pnlMain.Name = "pnlMain";
+            pnlMain.Size = new Size(693, 616);
+            pnlMain.TabIndex = 0;
             // 
             // flowPanelProducts
             // 
             flowPanelProducts.AutoScroll = true;
-            flowPanelProducts.BackColor = Color.Silver;
+            flowPanelProducts.BackColor = Color.FromArgb(245, 248, 255);
             flowPanelProducts.Dock = DockStyle.Fill;
-            flowPanelProducts.Location = new Point(0, 399);
+            flowPanelProducts.FlowDirection = FlowDirection.TopDown;
+            flowPanelProducts.Location = new Point(0, 139);
             flowPanelProducts.Name = "flowPanelProducts";
-            flowPanelProducts.Size = new Size(578, 256);
-            flowPanelProducts.TabIndex = 30;
+            flowPanelProducts.Padding = new Padding(0, 4, 0, 0);
+            flowPanelProducts.Size = new Size(691, 317);
+            flowPanelProducts.TabIndex = 10;
+            flowPanelProducts.WrapContents = false;
+            // 
+            // pnlTotalStrip
+            // 
+            pnlTotalStrip.BackColor = Color.FromArgb(8, 10, 22);
+            pnlTotalStrip.Controls.Add(lblTotalLabel);
+            pnlTotalStrip.Controls.Add(lblTotal);
+            pnlTotalStrip.Dock = DockStyle.Bottom;
+            pnlTotalStrip.Location = new Point(0, 456);
+            pnlTotalStrip.Name = "pnlTotalStrip";
+            pnlTotalStrip.Size = new Size(691, 75);
+            pnlTotalStrip.TabIndex = 11;
+            // 
+            // lblTotalLabel
+            // 
+            lblTotalLabel.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            lblTotalLabel.ForeColor = Color.FromArgb(80, 145, 230);
+            lblTotalLabel.Location = new Point(18, 0);
+            lblTotalLabel.Name = "lblTotalLabel";
+            lblTotalLabel.Size = new Size(189, 75);
+            lblTotalLabel.TabIndex = 0;
+            lblTotalLabel.Text = "ORDER TOTAL";
+            lblTotalLabel.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // lblTotal
+            // 
+            lblTotal.Font = new Font("Segoe UI", 15F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            lblTotal.ForeColor = Color.FromArgb(60, 180, 255);
+            lblTotal.Location = new Point(541, 0);
+            lblTotal.Name = "lblTotal";
+            lblTotal.Size = new Size(152, 75);
+            lblTotal.TabIndex = 1;
+            lblTotal.Text = "$0.00";
+            lblTotal.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // pnlFooter
+            // 
+            pnlFooter.BackColor = Color.FromArgb(235, 240, 252);
+            pnlFooter.Controls.Add(btnPrint);
+            pnlFooter.Controls.Add(btnDone);
+            pnlFooter.Dock = DockStyle.Bottom;
+            pnlFooter.Location = new Point(0, 531);
+            pnlFooter.Name = "pnlFooter";
+            pnlFooter.Size = new Size(691, 83);
+            pnlFooter.TabIndex = 12;
+            // 
+            // btnPrint
+            // 
+            btnPrint.BorderColor = Color.FromArgb(30, 120, 255);
+            btnPrint.BorderRadius = 7;
+            btnPrint.BorderThickness = 2;
+            btnPrint.CustomizableEdges = customizableEdges1;
+            btnPrint.DisabledState.BorderColor = Color.DarkGray;
+            btnPrint.DisabledState.FillColor = Color.FromArgb(169, 169, 169);
+            btnPrint.DisabledState.ForeColor = Color.FromArgb(141, 141, 141);
+            btnPrint.FillColor = Color.White;
+            btnPrint.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnPrint.ForeColor = Color.FromArgb(15, 55, 140);
+            btnPrint.Location = new Point(18, 13);
+            btnPrint.Name = "btnPrint";
+            btnPrint.ShadowDecoration.CustomizableEdges = customizableEdges2;
+            btnPrint.Size = new Size(189, 55);
+            btnPrint.TabIndex = 20;
+            btnPrint.Text = "Print Receipt";
+            // 
+            // btnDone
+            // 
+            btnDone.BorderRadius = 7;
+            btnDone.CustomizableEdges = customizableEdges3;
+            btnDone.DisabledState.BorderColor = Color.DarkGray;
+            btnDone.DisabledState.FillColor = Color.FromArgb(169, 169, 169);
+            btnDone.DisabledState.ForeColor = Color.FromArgb(141, 141, 141);
+            btnDone.FillColor = Color.FromArgb(20, 90, 210);
+            btnDone.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnDone.ForeColor = Color.White;
+            btnDone.Location = new Point(229, 13);
+            btnDone.Name = "btnDone";
+            btnDone.ShadowDecoration.CustomizableEdges = customizableEdges4;
+            btnDone.Size = new Size(188, 55);
+            btnDone.TabIndex = 21;
+            btnDone.Text = "Close";
+            btnDone.Click += btnClose_Click;
+            // 
+            // pnlTableHeader
+            // 
+            pnlTableHeader.BackColor = Color.FromArgb(230, 238, 255);
+            pnlTableHeader.Controls.Add(lblColItem);
+            pnlTableHeader.Controls.Add(lblColQty);
+            pnlTableHeader.Controls.Add(lblColPrice);
+            pnlTableHeader.Controls.Add(lblColSubtotal);
+            pnlTableHeader.Dock = DockStyle.Top;
+            pnlTableHeader.Location = new Point(0, 80);
+            pnlTableHeader.Name = "pnlTableHeader";
+            pnlTableHeader.Size = new Size(691, 59);
+            pnlTableHeader.TabIndex = 13;
+            // 
+            // lblColItem
+            // 
+            lblColItem.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
+            lblColItem.ForeColor = Color.FromArgb(20, 90, 210);
+            lblColItem.Location = new Point(14, -1);
+            lblColItem.Name = "lblColItem";
+            lblColItem.Size = new Size(193, 60);
+            lblColItem.TabIndex = 0;
+            lblColItem.Text = "ITEM";
+            lblColItem.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // lblColQty
+            // 
+            lblColQty.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
+            lblColQty.ForeColor = Color.FromArgb(20, 90, 210);
+            lblColQty.Location = new Point(202, 0);
+            lblColQty.Name = "lblColQty";
+            lblColQty.Size = new Size(84, 59);
+            lblColQty.TabIndex = 1;
+            lblColQty.Text = "QTY";
+            lblColQty.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // lblColPrice
+            // 
+            lblColPrice.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
+            lblColPrice.ForeColor = Color.FromArgb(20, 90, 210);
+            lblColPrice.Location = new Point(330, -1);
+            lblColPrice.Name = "lblColPrice";
+            lblColPrice.Size = new Size(98, 59);
+            lblColPrice.TabIndex = 2;
+            lblColPrice.Text = "UNIT PRICE";
+            lblColPrice.TextAlign = ContentAlignment.MiddleRight;
+            lblColPrice.Click += lblColPrice_Click;
+            // 
+            // lblColSubtotal
+            // 
+            lblColSubtotal.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
+            lblColSubtotal.ForeColor = Color.FromArgb(20, 90, 210);
+            lblColSubtotal.Location = new Point(475, 2);
+            lblColSubtotal.Name = "lblColSubtotal";
+            lblColSubtotal.Size = new Size(90, 53);
+            lblColSubtotal.TabIndex = 3;
+            lblColSubtotal.Text = "SUBTOTAL";
+            lblColSubtotal.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // pnlMainHeader
+            // 
+            pnlMainHeader.BackColor = Color.FromArgb(245, 248, 255);
+            pnlMainHeader.Controls.Add(guna2ImageButton1);
+            pnlMainHeader.Controls.Add(lblMainTitle);
+            pnlMainHeader.Controls.Add(btnClose);
+            pnlMainHeader.Controls.Add(pnlMainHeaderLine);
+            pnlMainHeader.Dock = DockStyle.Top;
+            pnlMainHeader.Location = new Point(0, 0);
+            pnlMainHeader.Name = "pnlMainHeader";
+            pnlMainHeader.Size = new Size(691, 80);
+            pnlMainHeader.TabIndex = 14;
+            // 
+            // lblMainTitle
+            // 
+            lblMainTitle.AutoSize = true;
+            lblMainTitle.Font = new Font("Georgia", 13F, FontStyle.Bold);
+            lblMainTitle.ForeColor = Color.FromArgb(10, 35, 100);
+            lblMainTitle.Location = new Point(18, 24);
+            lblMainTitle.Name = "lblMainTitle";
+            lblMainTitle.Size = new Size(209, 30);
+            lblMainTitle.TabIndex = 0;
+            lblMainTitle.Text = "Items Ordered";
+            // 
+            // btnClose
+            // 
+            btnClose.CheckedState.ImageSize = new Size(28, 28);
+            btnClose.HoverState.ImageSize = new Size(28, 28);
+            btnClose.Image = (Image)resources.GetObject("btnClose.Image");
+            btnClose.ImageOffset = new Point(0, 0);
+            btnClose.ImageRotate = 0F;
+            btnClose.ImageSize = new Size(28, 28);
+            btnClose.Location = new Point(510, 13);
+            btnClose.Name = "btnClose";
+            btnClose.PressedState.ImageSize = new Size(28, 28);
+            btnClose.ShadowDecoration.CustomizableEdges = customizableEdges6;
+            btnClose.Size = new Size(32, 32);
+            btnClose.TabIndex = 0;
+            btnClose.Click += btnClose_Click;
+            // 
+            // pnlMainHeaderLine
+            // 
+            pnlMainHeaderLine.BackColor = Color.FromArgb(180, 205, 245);
+            pnlMainHeaderLine.Dock = DockStyle.Bottom;
+            pnlMainHeaderLine.Location = new Point(0, 79);
+            pnlMainHeaderLine.Name = "pnlMainHeaderLine";
+            pnlMainHeaderLine.Size = new Size(691, 1);
+            pnlMainHeaderLine.TabIndex = 1;
+            // 
+            // guna2ImageButton1
+            // 
+            guna2ImageButton1.CheckedState.ImageSize = new Size(64, 64);
+            guna2ImageButton1.HoverState.ImageSize = new Size(64, 64);
+            guna2ImageButton1.Image = (Image)resources.GetObject("guna2ImageButton1.Image");
+            guna2ImageButton1.ImageOffset = new Point(0, 0);
+            guna2ImageButton1.ImageRotate = 0F;
+            guna2ImageButton1.ImageSize = new Size(50, 50);
+            guna2ImageButton1.Location = new Point(614, 7);
+            guna2ImageButton1.Name = "guna2ImageButton1";
+            guna2ImageButton1.PressedState.ImageSize = new Size(64, 64);
+            guna2ImageButton1.ShadowDecoration.CustomizableEdges = customizableEdges5;
+            guna2ImageButton1.Size = new Size(66, 66);
+            guna2ImageButton1.TabIndex = 21;
+            guna2ImageButton1.Click += guna2ImageButton1_Click;
             // 
             // FormDetailRecord
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(578, 655);
-            Controls.Add(flowPanelProducts);
-            Controls.Add(panel2);
-            Controls.Add(panel1);
+            BackColor = Color.FromArgb(10, 18, 42);
+            ClientSize = new Size(903, 616);
+            Controls.Add(pnlMain);
+            Controls.Add(pnlSidebar);
             FormBorderStyle = FormBorderStyle.None;
             Name = "FormDetailRecord";
-            Text = "FormDetailRecord";
-            panel1.ResumeLayout(false);
-            panel1.PerformLayout();
-            panel2.ResumeLayout(false);
-            panel2.PerformLayout();
+            StartPosition = FormStartPosition.CenterParent;
+            Text = "Order Details";
+            pnlSidebar.ResumeLayout(false);
+            pnlMain.ResumeLayout(false);
+            pnlTotalStrip.ResumeLayout(false);
+            pnlFooter.ResumeLayout(false);
+            pnlTableHeader.ResumeLayout(false);
+            pnlMainHeader.ResumeLayout(false);
+            pnlMainHeader.PerformLayout();
             ResumeLayout(false);
         }
 
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+
+            using (Pen pen = new Pen(Color.Black, 2))
+            {
+                Rectangle rect = this.ClientRectangle;
+                rect.Width -= 1;
+                rect.Height -= 1;
+
+                e.Graphics.DrawRectangle(pen, rect);
+            }
+        }
         #endregion
 
-        private Panel panel1;
-        private Guna.UI2.WinForms.Guna2ImageButton btnClose;
-        private Label label1;
-        private Guna.UI2.WinForms.Guna2Button guna2Button1;
-        private Panel panel2;
+        // ── Fields ────────────────────────────────────────────────────────
+        private Panel pnlSidebar;
+        private Panel pnlSidebarAccent;
+        private Panel pnlSidebarDivider;
+        private Label lblSidebarTitle;
+        private Label lblSidebarSub;
+
+        private Label lblSB_OrderIdCap;
         private Label lblID;
+        private Label lblSB_TableCap;
         private Label lblTable;
+        private Label lblSB_StaffCap;
         private Label lblStaff;
+        private Label lblSB_TypeCap;
         private Label lblType;
+        private Label lblSB_DateCap;
         private Label lblDate;
-        private Label lblTotal;
+        private Label lblSB_StatusCap;
         private Label lblStatus;
-        private Label label2;
-        private Label label3;
-        private Label label4;
-        private Label label5;
-        private Label label6;
-        private Label label7;
-        private Label label8;
+
+        private Panel pnlMain;
+        private Panel pnlMainHeader;
+        private Panel pnlMainHeaderLine;
+        private Label lblMainTitle;
+        private Guna.UI2.WinForms.Guna2ImageButton btnClose;
+
+        private Panel pnlTableHeader;
+        private Label lblColItem;
+        private Label lblColQty;
+        private Label lblColPrice;
+        private Label lblColSubtotal;
+
+
         private FlowLayoutPanel flowPanelProducts;
+
+        private Panel pnlTotalStrip;
+        private Label lblTotalLabel;
+        private Label lblTotal;
+
+        private Panel pnlFooter;
+        private Guna.UI2.WinForms.Guna2Button btnPrint;
+        private Guna.UI2.WinForms.Guna2Button btnDone;
+        private Guna.UI2.WinForms.Guna2ImageButton guna2ImageButton1;
     }
 }

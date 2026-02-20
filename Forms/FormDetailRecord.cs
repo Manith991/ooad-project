@@ -1,204 +1,193 @@
-﻿using Npgsql;
+﻿using OOAD_Project.Domain;
+using OOAD_Project.Patterns.Repository;
 
 namespace OOAD_Project
 {
+    /// <summary>
+    /// REPOSITORY PATTERN applied:
+    ///   - Order header loaded via OrderRepository.GetById()
+    ///   - Order items loaded via OrderItemRepository.GetByOrderId()
+    ///     instead of raw NpgsqlCommand calls inside the form.
+    ///
+    /// No Command or Observer pattern is needed here — this is a
+    /// read-only detail view with no mutations.
+    /// </summary>
     public partial class FormDetailRecord : Form
     {
-        private readonly int orderId;
+        private readonly int _orderId;
 
-        public FormDetailRecord(int orderId)
+        // REPOSITORY PATTERN – injected or created locally
+        private readonly IRepository<Order> _orderRepository;
+        private readonly OrderItemRepository _orderItemRepository;
+
+        public FormDetailRecord(
+            int orderId,
+            IRepository<Order>? orderRepository = null,
+            OrderItemRepository? orderItemRepository = null)
         {
             InitializeComponent();
-            this.orderId = orderId;
 
+            _orderId = orderId;
             this.StartPosition = FormStartPosition.CenterScreen;
 
+            _orderRepository = orderRepository ?? new OrderRepository();
+            _orderItemRepository = orderItemRepository ?? new OrderItemRepository();
+
             LoadOrderDetail();
-            LoadOrderProducts(); // ✅ Load all product items
+            LoadOrderProducts();
         }
 
+        // ── Load order header via Repository ──────────────────────────────
         private void LoadOrderDetail()
         {
-            string query = @"
-                SELECT 
-                    o.order_id,
-                    t.table_name,
-                    u.name AS staff_name,
-                    o.order_type,
-                    o.order_date,
-                    o.total_amount,
-                    o.status
-                FROM orders o
-                LEFT JOIN tables t ON o.table_id = t.table_id
-                LEFT JOIN users u ON o.user_id = u.id
-                WHERE o.order_id = @order_id;
-            ";
-
             try
             {
-                using (var conn = Database.GetConnection())
+                // REPOSITORY PATTERN: single call replaces the raw SQL block
+                Order? order = _orderRepository.GetById(_orderId);
+
+                if (order == null)
                 {
-                    conn.Open();
-                    using (var cmd = new NpgsqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@order_id", orderId);
-
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                lblID.Text = reader["order_id"].ToString();
-                                lblTable.Text = reader["table_name"]?.ToString() ?? "-";
-                                lblStaff.Text = reader["staff_name"]?.ToString() ?? "-";
-                                lblType.Text = reader["order_type"]?.ToString() ?? "-";
-                                lblDate.Text = Convert.ToDateTime(reader["order_date"]).ToString("yyyy-MM-dd HH:mm");
-                                lblTotal.Text = Convert.ToDecimal(reader["total_amount"]).ToString("C");
-                                lblStatus.Text = reader["status"]?.ToString() ?? "-";
-
-                                string status = lblStatus.Text.ToLower();
-                                lblStatus.ForeColor = status switch
-                                {
-                                    "completed" => Color.Green,
-                                    "pending" => Color.Orange,
-                                    "cancelled" => Color.Red,
-                                    _ => Color.Black
-                                };
-                            }
-                            else
-                            {
-                                MessageBox.Show("Order not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                this.Close();
-                            }
-                        }
-                    }
+                    MessageBox.Show("Order not found.", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Close();
+                    return;
                 }
+
+                string status = order.Status ?? "—";
+
+                lblID.Text = "#" + order.OrderId;
+                lblTable.Text = order.TableName ?? "—";
+                lblStaff.Text = order.StaffName ?? "—";
+                lblType.Text = order.OrderType ?? "—";
+                lblDate.Text = order.OrderDate.ToString("dd MMM yyyy  HH:mm");
+                lblTotal.Text = order.TotalAmount.ToString("C");
+                lblStatus.Text = status;
+
+                lblStatus.ForeColor = status.ToLower() switch
+                {
+                    "completed" => Color.FromArgb(80, 220, 135),
+                    "pending" => Color.FromArgb(255, 195, 80),
+                    "cancelled" => Color.FromArgb(255, 100, 100),
+                    _ => Color.FromArgb(215, 240, 225)
+                };
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading order detail: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error loading order: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        // ✅ New method to load products
+        // ── Load order items via Repository ───────────────────────────────
         private void LoadOrderProducts()
         {
-            string query = @"
-        SELECT 
-            p.productname,
-            od.quantity,
-            od.price,
-            od.subtotal
-        FROM order_details od
-        JOIN products p ON od.product_id = p.productid
-        WHERE od.order_id = @order_id;
-    ";
-
             try
             {
-                using (var conn = Database.GetConnection())
+                // REPOSITORY PATTERN: dedicated repository for order items
+                var items = _orderItemRepository.GetByOrderId(_orderId).ToList();
+
+                flowPanelProducts.Controls.Clear();
+
+                if (items.Count == 0)
                 {
-                    conn.Open();
-                    using (var cmd = new NpgsqlCommand(query, conn))
+                    flowPanelProducts.Controls.Add(new Label
                     {
-                        cmd.Parameters.AddWithValue("@order_id", orderId);
-
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            flowPanelProducts.Controls.Clear(); // Clear old controls first
-                            flowPanelProducts.AutoScroll = true; // ensure scrolling is enabled
-
-                            bool any = false;
-                            while (reader.Read())
-                            {
-                                any = true;
-                                string name = reader.IsDBNull(0) ? "-" : reader.GetString(0);
-                                int qty = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
-                                decimal price = reader.IsDBNull(2) ? 0m : reader.GetDecimal(2);
-                                decimal total = reader.IsDBNull(3) ? qty * price : reader.GetDecimal(3);
-
-                                var productCard = CreateProductCard(name, qty, price, total);
-                                flowPanelProducts.Controls.Add(productCard);
-                            }
-
-                            if (!any)
-                            {
-                                // helpful placeholder so user sees no items found
-                                var lbl = new Label
-                                {
-                                    Text = "No items found for this order.",
-                                    AutoSize = true,
-                                    Font = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Italic),
-                                    Padding = new Padding(8),
-                                    ForeColor = System.Drawing.Color.DimGray
-                                };
-                                flowPanelProducts.Controls.Add(lbl);
-                            }
-                        }
-                    }
+                        Text = "No items found for this order.",
+                        AutoSize = true,
+                        Font = new Font("Segoe UI", 10F, FontStyle.Italic),
+                        Padding = new Padding(18, 14, 0, 0),
+                        ForeColor = Color.FromArgb(170, 170, 170)
+                    });
+                    return;
                 }
+
+                foreach (var item in items)
+                    flowPanelProducts.Controls.Add(
+                        CreateProductRow(item.ProductName, item.Quantity, item.Price, item.Subtotal));
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading order products: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error loading products: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-
-        // ✅ Helper to make nice product panels
-        private Panel CreateProductCard(string name, int qty, decimal price, decimal total)
+        // ── UI helper: one table row per order item ───────────────────────
+        private Panel CreateProductRow(string name, int qty, decimal price, decimal subtotal)
         {
-            Panel card = new Panel
+            bool odd = flowPanelProducts.Controls.Count % 2 == 0;
+
+            var row = new Panel
             {
-                Width = 250,
-                Height = 80,
-                BackColor = Color.WhiteSmoke,
-                Margin = new Padding(8),
-                Padding = new Padding(10),
-                BorderStyle = BorderStyle.FixedSingle
+                Width = flowPanelProducts.ClientSize.Width - 2,
+                Height = 44,
+                BackColor = odd ? Color.FromArgb(252, 252, 250)
+                                : Color.FromArgb(245, 249, 246),
+                Margin = Padding.Empty,
+                Padding = new Padding(0)
             };
 
-            Label lblName = new Label
+            var line = new Panel
             {
+                BackColor = Color.FromArgb(228, 234, 228),
+                Dock = DockStyle.Bottom,
+                Height = 1
+            };
+
+            var lblName = new Label
+            {
+                AutoSize = false,
+                Width = 188,
+                Height = 44,
+                Location = new Point(12, 0),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(30, 45, 35),
                 Text = name,
-                Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                AutoSize = true,
-                Location = new Point(5, 5)
+                TextAlign = ContentAlignment.MiddleLeft
             };
 
-            Label lblQty = new Label
+            var lblQty = new Label
             {
-                Text = $"Qty: {qty}",
-                Location = new Point(5, 35),
-                AutoSize = true
+                AutoSize = false,
+                Width = 50,
+                Height = 44,
+                Location = new Point(232, 0),
+                Font = new Font("Segoe UI", 9.5F),
+                ForeColor = Color.FromArgb(80, 100, 85),
+                Text = qty.ToString(),
+                TextAlign = ContentAlignment.MiddleLeft
             };
 
-            Label lblPrice = new Label
+            var lblPrice = new Label
             {
-                Text = $"Price: {price:C}",
-                Location = new Point(100, 35),
-                AutoSize = true
+                AutoSize = false,
+                Width = 90,
+                Height = 44,
+                Location = new Point(342, 0),
+                Font = new Font("Segoe UI", 9.5F),
+                ForeColor = Color.FromArgb(80, 100, 85),
+                Text = price.ToString("C"),
+                TextAlign = ContentAlignment.MiddleLeft
             };
 
-            Label lblTotal = new Label
+            var lblSub = new Label
             {
-                Text = $"Total: {total:C}",
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                ForeColor = Color.DarkGreen,
-                Location = new Point(5, 55),
-                AutoSize = true
+                AutoSize = false,
+                Width = 90,
+                Height = 44,
+                Location = new Point(482, 0),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(28, 56, 42),
+                Text = subtotal.ToString("C"),
+                TextAlign = ContentAlignment.MiddleLeft
             };
 
-            card.Controls.Add(lblName);
-            card.Controls.Add(lblQty);
-            card.Controls.Add(lblPrice);
-            card.Controls.Add(lblTotal);
-
-            return card;
+            row.Controls.AddRange(new Control[] { line, lblName, lblQty, lblPrice, lblSub });
+            return row;
         }
 
-        private void btnClose_Click(object sender, EventArgs e)
-        {
-            this.Close();
-        }
+        private void btnClose_Click(object sender, EventArgs e) => Close();
+        private void guna2ImageButton1_Click(object sender, EventArgs e) => Close();
+        private void lblColPrice_Click(object sender, EventArgs e) { }
     }
 }

@@ -1,37 +1,62 @@
-﻿using Npgsql;
+﻿using OOAD_Project.Domain;
+using OOAD_Project.Patterns.Command;
+using OOAD_Project.Patterns.Repository;
 
 namespace OOAD_Project
 {
+    /// <summary>
+    /// COMMAND PATTERN applied:
+    ///   - Save triggers UpdateStaffCommand through CommandInvoker,
+    ///     so the edit is tracked in the undo/redo stack.
+    /// REPOSITORY PATTERN applied:
+    ///   - Persistence delegated to IRepository&lt;User&gt; (UserRepository)
+    ///     instead of raw NpgsqlCommand calls.
+    /// </summary>
     public partial class FormEditStaff : Form
     {
-        private readonly int userId;
+        private readonly int _userId;
         private string? _currentImagePath;
 
-        // ✅ FIXED: Expose controls and image path as public properties
-        //           so StaffFormRefactored can read them after ShowDialog().
+        // Public properties read by the caller after ShowDialog()
         public string CurrentImagePath => _currentImagePath ?? string.Empty;
         public string StaffNameValue => txtStaff.Text.Trim();
         public string RoleValue => cbRole.Text;
         public string StatusValue => cbStatus.Text;
 
-        public FormEditStaff(int userId, string name, string role, string status, string? imagePath)
+        // REPOSITORY PATTERN
+        private readonly IRepository<User> _userRepository;
+
+        // COMMAND PATTERN
+        private readonly CommandInvoker _invoker;
+
+        public FormEditStaff(
+            int userId,
+            string name,
+            string role,
+            string status,
+            string? imagePath,
+            CommandInvoker? invoker = null,
+            IRepository<User>? userRepository = null)
         {
             InitializeComponent();
 
-            this.userId = userId;
+            _userId = userId;
             txtStaff.Text = name;
             cbRole.Text = role;
             cbStatus.Text = status;
             _currentImagePath = imagePath;
 
+            // Allow dependency injection; fall back to defaults
+            _invoker = invoker ?? new CommandInvoker();
+            _userRepository = userRepository ?? new UserRepository();
+
             LoadImage(imagePath);
         }
 
-        // 🟢 Load image safely
+        // ── Load image safely ─────────────────────────────────────────────
         private void LoadImage(string? imagePath)
         {
-            if (string.IsNullOrEmpty(imagePath))
-                return;
+            if (string.IsNullOrEmpty(imagePath)) return;
 
             string[] possiblePaths =
             {
@@ -52,42 +77,38 @@ namespace OOAD_Project
             }
         }
 
-        // 📂 Browse for new image
+        // ── Browse for new image ──────────────────────────────────────────
         private void btnBrowse_Click(object sender, EventArgs e)
         {
-            using (OpenFileDialog ofd = new OpenFileDialog())
+            using var ofd = new OpenFileDialog { Filter = "Image Files|*.png;*.jpg;*.jpeg" };
+            if (ofd.ShowDialog() != DialogResult.OK) return;
+
+            string selectedPath = ofd.FileName;
+
+            using (var fs = new FileStream(selectedPath, FileMode.Open, FileAccess.Read))
+                pbImage.Image = Image.FromStream(fs);
+
+            string resourcesFolder = Path.Combine(Application.StartupPath, "Resources");
+            Directory.CreateDirectory(resourcesFolder);
+
+            string fileNameOnly = Path.GetFileNameWithoutExtension(selectedPath);
+            string extension = Path.GetExtension(selectedPath);
+            string destPath = Path.Combine(resourcesFolder, Path.GetFileName(selectedPath));
+
+            int counter = 1;
+            while (File.Exists(destPath))
             {
-                ofd.Filter = "Image Files|*.png;*.jpg;*.jpeg";
-                if (ofd.ShowDialog() == DialogResult.OK)
-                {
-                    string selectedPath = ofd.FileName;
-
-                    using (var fs = new FileStream(selectedPath, FileMode.Open, FileAccess.Read))
-                        pbImage.Image = Image.FromStream(fs);
-
-                    string resourcesFolder = Path.Combine(Application.StartupPath, "Resources");
-                    Directory.CreateDirectory(resourcesFolder);
-
-                    string fileNameOnly = Path.GetFileNameWithoutExtension(selectedPath);
-                    string extension = Path.GetExtension(selectedPath);
-                    string destPath = Path.Combine(resourcesFolder, Path.GetFileName(selectedPath));
-
-                    int counter = 1;
-                    while (File.Exists(destPath))
-                    {
-                        destPath = Path.Combine(resourcesFolder, $"{fileNameOnly}_{counter}{extension}");
-                        counter++;
-                    }
-
-                    File.Copy(selectedPath, destPath, false);
-                    _currentImagePath = Path.GetFileName(destPath);
-                }
+                destPath = Path.Combine(resourcesFolder, $"{fileNameOnly}_{counter}{extension}");
+                counter++;
             }
+
+            File.Copy(selectedPath, destPath, overwrite: false);
+            _currentImagePath = Path.GetFileName(destPath);
         }
 
         private void btnClose_Click(object sender, EventArgs e) => this.Close();
 
-        // 💾 Save
+        // ── Save – COMMAND PATTERN ────────────────────────────────────────
         private void btnSave_Click(object sender, EventArgs e)
         {
             string newName = txtStaff.Text.Trim();
@@ -101,20 +122,21 @@ namespace OOAD_Project
                 return;
             }
 
-            string query = @"UPDATE users 
-                             SET name   = @name, 
-                                 role   = @role, 
-                                 status = @status, 
-                                 image  = @image 
-                             WHERE id = @id";
+            // Build updated domain object
+            var updatedUser = new User
+            {
+                Id = _userId,
+                Name = newName,
+                Role = newRole,
+                Status = newStatus,
+                Image = _currentImagePath
+            };
+
             try
             {
-                Database.Execute(query,
-                    new NpgsqlParameter("@name", newName),
-                    new NpgsqlParameter("@role", newRole),
-                    new NpgsqlParameter("@status", newStatus),
-                    new NpgsqlParameter("@image", (object?)_currentImagePath ?? DBNull.Value),
-                    new NpgsqlParameter("@id", userId));
+                // COMMAND PATTERN: wrap the update so it can be undone
+                var command = new UpdateStaffCommand(updatedUser, _userRepository);
+                _invoker.ExecuteCommand(command);
 
                 MessageBox.Show("Staff information updated successfully.", "Saved",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);

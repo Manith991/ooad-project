@@ -4,9 +4,6 @@ using OOAD_Project.Patterns.Repository;
 
 namespace OOAD_Project.Patterns.Command
 {
-    /// <summary>
-    /// COMMAND PATTERN - Add Category Command
-    /// </summary>
     public class AddCategoryCommand : ICommand
     {
         private readonly Category _category;
@@ -57,9 +54,6 @@ namespace OOAD_Project.Patterns.Command
         }
     }
 
-    /// <summary>
-    /// COMMAND PATTERN - Update Category Command
-    /// </summary>
     public class UpdateCategoryCommand : ICommand
     {
         private readonly Category _newCategory;
@@ -116,9 +110,6 @@ namespace OOAD_Project.Patterns.Command
         }
     }
 
-    /// <summary>
-    /// COMMAND PATTERN - Delete Category Command
-    /// </summary>
     public class DeleteCategoryCommand : ICommand
     {
         private readonly int _categoryId;

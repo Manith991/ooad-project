@@ -14,7 +14,6 @@
         public string? TableName { get; set; }
         public string? StaffName { get; set; }
 
-        // Navigation properties
         public List<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 
         public Order() { }

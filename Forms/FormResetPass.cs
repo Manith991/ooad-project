@@ -1,19 +1,34 @@
-﻿using Npgsql;
+﻿using OOAD_Project.Domain;
+using OOAD_Project.Patterns.Repository;
 
 namespace OOAD_Project
 {
+    /// <summary>
+    /// REPOSITORY PATTERN applied:
+    ///   - User lookup delegated to IRepository&lt;User&gt; (UserRepository)
+    ///     instead of a raw NpgsqlCommand inside the form.
+    ///
+    /// No Command/Observer pattern needed – this form only validates an
+    /// e-mail and navigates to FormNewPass; it performs no data mutations.
+    /// </summary>
     public partial class FormResetPass : Form
     {
-        private const string emailPlaceholder = "Enter Email...";
-        public FormResetPass()
+        private const string EmailPlaceholder = "Enter Email...";
+
+        // REPOSITORY PATTERN
+        private readonly UserRepository _userRepository;
+
+        public FormResetPass(UserRepository? userRepository = null)
         {
             InitializeComponent();
             this.StartPosition = FormStartPosition.CenterScreen;
-            txtEmail.Text = emailPlaceholder;
+
+            _userRepository = userRepository ?? new UserRepository();
+
+            // Placeholder setup
+            txtEmail.Text = EmailPlaceholder;
             txtEmail.ForeColor = Color.Gray;
             txtEmail.BorderStyle = BorderStyle.None;
-
-            // Add bottom border (if you still want it)
             AddBottomBorder(txtEmail);
 
             this.AcceptButton = btnReset;
@@ -21,7 +36,8 @@ namespace OOAD_Project
 
         private void FormResetPass_Load(object sender, EventArgs e)
         {
-            txtEmail.Text = emailPlaceholder;
+            // Re-apply placeholder in case InitializeComponent overwrites it
+            txtEmail.Text = EmailPlaceholder;
             txtEmail.ForeColor = Color.Gray;
             txtEmail.BorderStyle = BorderStyle.None;
             AddBottomBorder(txtEmail);
@@ -29,20 +45,20 @@ namespace OOAD_Project
 
         private void AddBottomBorder(TextBox textBox)
         {
-            Panel borderPanel = new Panel
+            var borderPanel = new Panel
             {
                 Height = 2,
                 Width = textBox.Width,
                 BackColor = Color.Gray,
                 Location = new Point(textBox.Location.X, textBox.Location.Y + textBox.Height)
             };
-            textBox.Parent.Controls.Add(borderPanel);
+            textBox.Parent!.Controls.Add(borderPanel);
             borderPanel.BringToFront();
         }
 
         private void txtEmail_Enter(object sender, EventArgs e)
         {
-            if (txtEmail.Text == emailPlaceholder)
+            if (txtEmail.Text == EmailPlaceholder)
             {
                 txtEmail.Text = "";
                 txtEmail.ForeColor = Color.Black;
@@ -53,56 +69,54 @@ namespace OOAD_Project
         {
             if (string.IsNullOrWhiteSpace(txtEmail.Text))
             {
-                txtEmail.Text = emailPlaceholder;
+                txtEmail.Text = EmailPlaceholder;
                 txtEmail.ForeColor = Color.Gray;
             }
         }
 
+        // ── Reset button – REPOSITORY PATTERN ────────────────────────────
         private void btnReset_Click(object sender, EventArgs e)
         {
             string email = txtEmail.Text.Trim();
 
-            if (email == emailPlaceholder || string.IsNullOrEmpty(email))
+            if (email == EmailPlaceholder || string.IsNullOrEmpty(email))
             {
-                MessageBox.Show("Please enter your email.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please enter your email.", "Warning",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             try
             {
-                using (var conn = Database.GetConnection())
-                {
-                    conn.Open();
-                    string query = "SELECT COUNT(*) FROM users WHERE email = @Email AND LOWER(status) = 'active';";
-                    using (var cmd = new NpgsqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@Email", email);
-                        int count = Convert.ToInt32(cmd.ExecuteScalar());
+                // REPOSITORY PATTERN: delegate lookup to the repository
+                User? user = _userRepository.GetByEmail(email);
 
-                        if (count == 1)
-                        {
-                            MessageBox.Show("Email verified! Proceed to set your new password.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            FormNewPass newPass = new FormNewPass(email);
-                            newPass.StartPosition = FormStartPosition.CenterScreen;
-                            newPass.Show();
-                            this.Close();
-                        }
-                        else
-                        {
-                            MessageBox.Show("Email not found or inactive.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                    }
+                if (user != null &&
+                    string.Equals(user.Status, "active", StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show("Email verified! Proceed to set your new password.",
+                        "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    var newPassForm = new FormNewPass(email)
+                    {
+                        StartPosition = FormStartPosition.CenterScreen
+                    };
+                    newPassForm.Show();
+                    this.Close();
+                }
+                else
+                {
+                    MessageBox.Show("Email not found or inactive.", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error: {ex.Message}", "Database Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void btnClose_Click(object sender, EventArgs e)
-        {
-            this.Close();
-        }
+        private void btnClose_Click(object sender, EventArgs e) => this.Close();
     }
 }
