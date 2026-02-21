@@ -74,8 +74,6 @@ namespace OOAD_Project
             catch (Exception ex) { MessageBox.Show("Error deleting staff:\n" + ex.Message, "Error"); }
         }
 
-        // ── Image double-click (StaffForm-specific extra behavior) ────────
-
         protected override void SetupEventHandlers()
         {
             base.SetupEventHandlers();

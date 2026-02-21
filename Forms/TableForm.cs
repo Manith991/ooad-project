@@ -16,12 +16,11 @@ namespace OOAD_Project
         {
             InitializeComponent();
 
-            // wire base-class fields BEFORE InitializeForm()
             this.dataGridView = dgvTable;
             this.btnAdd = btnAdd;
 
             _repo = new TableRepository();
-            InitializeForm();   // ← template method skeleton runs here
+            InitializeForm();
         }
 
         // ── Abstract steps ────────────────────────────────────────────────
@@ -71,8 +70,6 @@ namespace OOAD_Project
             try { commandInvoker.ExecuteCommand(new DeleteTableCommand(id, _repo)); LoadData(); }
             catch (Exception ex) { MessageBox.Show("Error deleting table:\n" + ex.Message, "Error"); }
         }
-
-        // ── Override Add ──────────────────────────────────────────────────
 
         protected override void OnAddClick(object? sender, EventArgs e)
         {

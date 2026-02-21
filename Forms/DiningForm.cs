@@ -1,162 +1,171 @@
-﻿using Npgsql;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
+﻿using System.Runtime.InteropServices;
 using OOAD_Project.Components;
+using OOAD_Project.Domain;
+using OOAD_Project.Patterns.Repository;
 
 namespace OOAD_Project
 {
+    /// <summary>
+    /// REPOSITORY PATTERN applied:
+    ///   - Table list loaded via TableRepository instead of inline SQL.
+    ///   - User ID lookup via UserRepository instead of inline SQL.
+    ///   - Order creation delegated to OrderRepository instead of inline SQL.
+    ///
+    /// OBSERVER PATTERN (already present in POSForm):
+    ///   - DiningForm is passed to POSForm so TableStatusObserver can
+    ///     call back and refresh cards when an order is paid.
+    ///
+    /// No Command pattern needed here – table-card clicks open POSForm
+    /// which owns the Command / Strategy / Observer stacks.
+    /// </summary>
     public partial class DiningForm : Form
     {
-        [DllImport("user32.dll")]
-        public static extern bool ReleaseCapture();
+        [DllImport("user32.dll")] public static extern bool ReleaseCapture();
+        [DllImport("user32.dll")] public static extern bool SendMessage(IntPtr hWnd, int wMsg, int wParam, int lParam);
 
-        [DllImport("user32.dll")]
-        public static extern bool SendMessage(IntPtr hWnd, int wMsg, int wParam, int lParam);
+        private readonly string _currentUser;
 
-        private string currentUser;
+        // REPOSITORY PATTERN
+        private readonly IRepository<Table> _tableRepository;
+        private readonly IRepository<Order> _orderRepository;
+        private readonly UserRepository _userRepository;
 
-        public DiningForm(string username)
+        public DiningForm(
+            string username,
+            IRepository<Table>? tableRepository = null,
+            IRepository<Order>? orderRepository = null,
+            UserRepository? userRepository = null)
         {
             InitializeComponent();
-            currentUser = username;
+            _currentUser = username;
+            _tableRepository = tableRepository ?? new TableRepository();
+            _orderRepository = orderRepository ?? new OrderRepository();
+            _userRepository = userRepository ?? new UserRepository();
+
             LoadTableCards();
         }
 
-        private void LoadTableCards()
+        // ── Load table cards via Repository Pattern ───────────────────────
+        public void LoadTableCards()
         {
             flpTable.Controls.Clear();
             flpTable.Padding = new Padding(20);
 
-            string query = "SELECT table_id, table_name, capacity, status FROM tables ORDER BY table_id;";
-            using var conn = Database.GetConnection();
-            conn.Open();
-            using var cmd = new NpgsqlCommand(query, conn);
-            using var reader = cmd.ExecuteReader();
+            // REPOSITORY PATTERN: single call replaces raw SQL
+            var tables = _tableRepository.GetAll();
 
-            while (reader.Read())
+            foreach (var table in tables)
             {
-                int id = reader.GetInt32(0);
-                string name = reader.GetString(1);
-                int capacity = reader.GetInt32(2);
-                string status = reader.GetString(3);
-
-                TableCard card = new TableCard();
+                var card = new TableCard();
                 card.Margin = new Padding(10);
-                card.SetTableData(id, name, capacity, status);
+                card.SetTableData(table.TableId, table.TableName, table.Capacity, table.Status);
 
-                string username = this.currentUser;
-
-                card.Click += (s, e) =>
-                {
-                    string username = this.currentUser;
-
-                    if (card.TableStatus.Equals("Available", StringComparison.OrdinalIgnoreCase))
-                    {
-                        // ✅ Case 1: Available → create new order
-                        var result = MessageBox.Show($"Do you want to create a new order for {card.TableName}?",
-                                                     "New Order", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                        if (result == DialogResult.Yes)
-                        {
-                            try
-                            {
-                                using var conn2 = Database.GetConnection();
-                                conn2.Open();
-
-                                int userId = GetCurrentUserId();
-                                if (userId == -1)
-                                {
-                                    MessageBox.Show("User not found in database.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                    return;
-                                }
-
-                                string insertOrder = @"
-                    INSERT INTO orders (table_id, user_id, order_type, status)
-                    VALUES (@table_id, @user_id, 'Dine-in', 'Unpaid')
-                    RETURNING order_id;";
-
-                                using var cmd2 = new NpgsqlCommand(insertOrder, conn2);
-                                cmd2.Parameters.AddWithValue("table_id", card.TableId);
-                                cmd2.Parameters.AddWithValue("user_id", userId);
-                                int orderId = Convert.ToInt32(cmd2.ExecuteScalar());
-
-                                string updateTable = "UPDATE tables SET status='Taken' WHERE table_id=@table_id;";
-                                using var cmd3 = new NpgsqlCommand(updateTable, conn2);
-                                cmd3.Parameters.AddWithValue("table_id", card.TableId);
-                                cmd3.ExecuteNonQuery();
-
-                                card.SetTableData(card.TableId, card.TableName, card.TableCapacity, "Taken");
-
-                                POSForm pos = new POSForm(this, username, "Eat Here", card.TableName, card.TableId, orderId);
-                                pos.Show();
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show($"Error creating order: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            }
-                        }
-                    }
-                    else if (card.TableStatus.Equals("Taken", StringComparison.OrdinalIgnoreCase))
-                    {
-                        // ✅ Case 2: Taken → open existing unpaid order
-                        try
-                        {
-                            using var conn = Database.GetConnection();
-                            conn.Open();
-
-                            string query = @"
-                SELECT order_id 
-                FROM orders 
-                WHERE table_id = @tid AND status = 'Unpaid'
-                ORDER BY order_date DESC LIMIT 1;";
-
-                            using var cmd = new NpgsqlCommand(query, conn);
-                            cmd.Parameters.AddWithValue("tid", card.TableId);
-                            var result = cmd.ExecuteScalar();
-
-                            if (result != null)
-                            {
-                                int existingOrderId = Convert.ToInt32(result);
-                                POSForm pos = new POSForm(this, username, "Eat Here", card.TableName, card.TableId, existingOrderId);
-                                pos.Show();
-                            }
-                            else
-                            {
-                                MessageBox.Show("No unpaid order found for this table.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show($"Error loading existing order: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                    }
-                    else
-                    {
-                        // Optional: if status = Paid or Reserved etc.
-                        MessageBox.Show($"This table is {card.TableStatus}.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                };
-
+                card.Click += (s, e) => HandleTableCardClick(card);
 
                 flpTable.Controls.Add(card);
             }
         }
 
+        // ── Handle a card click ───────────────────────────────────────────
+        private void HandleTableCardClick(TableCard card)
+        {
+            if (card.TableStatus.Equals("Available", StringComparison.OrdinalIgnoreCase))
+            {
+                HandleAvailableTable(card);
+            }
+            else if (card.TableStatus.Equals("Taken", StringComparison.OrdinalIgnoreCase))
+            {
+                HandleTakenTable(card);
+            }
+            else
+            {
+                MessageBox.Show($"This table is {card.TableStatus}.", "Info",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        // ── Case 1: Available → create new order ──────────────────────────
+        private void HandleAvailableTable(TableCard card)
+        {
+            var result = MessageBox.Show(
+                $"Do you want to create a new order for {card.TableName}?",
+                "New Order", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (result != DialogResult.Yes) return;
+
+            try
+            {
+                // REPOSITORY PATTERN: get user id via repository
+                int userId = GetCurrentUserId();
+                if (userId == -1)
+                {
+                    MessageBox.Show("User not found in database.", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // REPOSITORY PATTERN: create order via repository
+                var newOrder = new Order
+                {
+                    TableId = card.TableId,
+                    UserId = userId,
+                    OrderType = "Dine-in",
+                    OrderDate = DateTime.Now,
+                    TotalAmount = 0,
+                    Status = "Unpaid",
+                    PaymentMethod = null
+                };
+                int orderId = _orderRepository.Add(newOrder);
+
+                // REPOSITORY PATTERN: update table status via repository
+                ((TableRepository)_tableRepository).UpdateStatus(card.TableId, "Taken");
+                card.SetTableData(card.TableId, card.TableName, card.TableCapacity, "Taken");
+
+                var pos = new POSForm(this, _currentUser, "Eat Here",
+                    card.TableName, card.TableId, orderId);
+                pos.Show();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error creating order: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // ── Case 2: Taken → open existing unpaid order ────────────────────
+        private void HandleTakenTable(TableCard card)
+        {
+            try
+            {
+                // REPOSITORY PATTERN: find unpaid order via repository
+                var unpaidOrder = ((OrderRepository)_orderRepository)
+                    .GetUnpaidOrderForTable(card.TableId);
+
+                if (unpaidOrder != null)
+                {
+                    var pos = new POSForm(this, _currentUser, "Eat Here",
+                        card.TableName, card.TableId, unpaidOrder.OrderId);
+                    pos.Show();
+                }
+                else
+                {
+                    MessageBox.Show("No unpaid order found for this table.", "Info",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading existing order: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // ── Helper: current user id via Repository ────────────────────────
         private int GetCurrentUserId()
         {
-            int userId = -1;
-            string query = "SELECT id FROM users WHERE username = @username LIMIT 1;";
-
-            using (var conn = Database.GetConnection())
-            {
-                conn.Open();
-                using var cmd = new NpgsqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("username", currentUser);
-                var result = cmd.ExecuteScalar();
-                if (result != null)
-                    userId = Convert.ToInt32(result);
-            }
-            return userId;
+            // REPOSITORY PATTERN: lookup via repository method
+            User? user = _userRepository.GetByUsername(_currentUser);
+            return user?.Id ?? -1;
         }
     }
 }

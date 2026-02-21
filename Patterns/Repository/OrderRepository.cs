@@ -5,17 +5,10 @@ using OOAD_Project.Domain;
 
 namespace OOAD_Project.Patterns.Repository
 {
-    /// <summary>
-    /// REPOSITORY PATTERN - Order data access.
-    /// Centralises all order-related database operations.
-    /// </summary>
     public class OrderRepository : IRepository<Order>
     {
-        // ─────────────────────────────────────────────────────────────────────
-        // Base SELECT shared by all query methods
-        // ─────────────────────────────────────────────────────────────────────
         private const string BaseSelect = @"
-            SELECT 
+            SELECT
                 o.order_id,
                 o.table_id,
                 t.table_name,
@@ -30,7 +23,7 @@ namespace OOAD_Project.Patterns.Repository
             LEFT JOIN tables t ON o.table_id = t.table_id
             LEFT JOIN users  u ON o.user_id  = u.id";
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ── IRepository<Order> ────────────────────────────────────────────
         public Order? GetById(int id)
         {
             string query = BaseSelect + " WHERE o.order_id = @id LIMIT 1;";
@@ -50,7 +43,6 @@ namespace OOAD_Project.Patterns.Repository
             }
         }
 
-        // ─────────────────────────────────────────────────────────────────────
         public IEnumerable<Order> GetAll()
         {
             var orders = new List<Order>();
@@ -61,8 +53,7 @@ namespace OOAD_Project.Patterns.Repository
                 conn.Open();
                 using var cmd = new NpgsqlCommand(query, conn);
                 using var reader = cmd.ExecuteReader();
-                while (reader.Read())
-                    orders.Add(MapReaderToOrder(reader));
+                while (reader.Read()) orders.Add(MapReaderToOrder(reader));
             }
             catch (Exception ex)
             {
@@ -71,53 +62,6 @@ namespace OOAD_Project.Patterns.Repository
             return orders;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        public IEnumerable<Order> GetByStatus(string status)
-        {
-            var orders = new List<Order>();
-            string query = BaseSelect + " WHERE o.status = @status ORDER BY o.order_date DESC;";
-            try
-            {
-                using var conn = Database.GetConnection();
-                conn.Open();
-                using var cmd = new NpgsqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@status", status);
-                using var reader = cmd.ExecuteReader();
-                while (reader.Read())
-                    orders.Add(MapReaderToOrder(reader));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[OrderRepository] GetByStatus error: {ex.Message}");
-            }
-            return orders;
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        public IEnumerable<Order> GetByDateRange(DateTime startDate, DateTime endDate)
-        {
-            var orders = new List<Order>();
-            string query = BaseSelect +
-                " WHERE o.order_date BETWEEN @start AND @end ORDER BY o.order_date DESC;";
-            try
-            {
-                using var conn = Database.GetConnection();
-                conn.Open();
-                using var cmd = new NpgsqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@start", startDate);
-                cmd.Parameters.AddWithValue("@end", endDate);
-                using var reader = cmd.ExecuteReader();
-                while (reader.Read())
-                    orders.Add(MapReaderToOrder(reader));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[OrderRepository] GetByDateRange error: {ex.Message}");
-            }
-            return orders;
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
         public int Add(Order entity)
         {
             const string query = @"
@@ -138,7 +82,6 @@ namespace OOAD_Project.Patterns.Repository
                 cmd.Parameters.AddWithValue("@total_amount", entity.TotalAmount);
                 cmd.Parameters.AddWithValue("@status", entity.Status ?? "Pending");
                 cmd.Parameters.AddWithValue("@payment_method", (object?)entity.PaymentMethod ?? DBNull.Value);
-
                 return Convert.ToInt32(cmd.ExecuteScalar());
             }
             catch (Exception ex)
@@ -148,7 +91,6 @@ namespace OOAD_Project.Patterns.Repository
             }
         }
 
-        // ─────────────────────────────────────────────────────────────────────
         public void Update(Order entity)
         {
             const string query = @"
@@ -181,14 +123,14 @@ namespace OOAD_Project.Patterns.Repository
             }
         }
 
-        // ─────────────────────────────────────────────────────────────────────
         public void Delete(int id)
         {
             try
             {
                 using var conn = Database.GetConnection();
                 conn.Open();
-                using var cmd = new NpgsqlCommand("DELETE FROM orders WHERE order_id = @id;", conn);
+                using var cmd = new NpgsqlCommand(
+                    "DELETE FROM orders WHERE order_id = @id;", conn);
                 cmd.Parameters.AddWithValue("@id", id);
                 cmd.ExecuteNonQuery();
             }
@@ -199,7 +141,6 @@ namespace OOAD_Project.Patterns.Repository
             }
         }
 
-        // ─────────────────────────────────────────────────────────────────────
         public bool Exists(int id)
         {
             try
@@ -218,10 +159,76 @@ namespace OOAD_Project.Patterns.Repository
             }
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // ✅ FIXED: Maps to the corrected Order class (nullable UserId,
-        //           TableName & StaffName navigation properties).
-        // ─────────────────────────────────────────────────────────────────────
+        // ── Extended query methods ────────────────────────────────────────
+
+        /// <summary>
+        /// Returns the most-recent Unpaid order for a table, or null.
+        /// Used by DiningForm instead of raw SQL.
+        /// </summary>
+        public Order? GetUnpaidOrderForTable(int tableId)
+        {
+            string query = BaseSelect +
+                " WHERE o.table_id = @tid AND o.status = 'Unpaid'" +
+                " ORDER BY o.order_date DESC LIMIT 1;";
+            try
+            {
+                using var conn = Database.GetConnection();
+                conn.Open();
+                using var cmd = new NpgsqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@tid", tableId);
+                using var reader = cmd.ExecuteReader();
+                return reader.Read() ? MapReaderToOrder(reader) : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[OrderRepository] GetUnpaidOrderForTable error: {ex.Message}");
+                return null;
+            }
+        }
+
+        public IEnumerable<Order> GetByStatus(string status)
+        {
+            var orders = new List<Order>();
+            string query = BaseSelect + " WHERE o.status = @status ORDER BY o.order_date DESC;";
+            try
+            {
+                using var conn = Database.GetConnection();
+                conn.Open();
+                using var cmd = new NpgsqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@status", status);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read()) orders.Add(MapReaderToOrder(reader));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[OrderRepository] GetByStatus error: {ex.Message}");
+            }
+            return orders;
+        }
+
+        public IEnumerable<Order> GetByDateRange(DateTime startDate, DateTime endDate)
+        {
+            var orders = new List<Order>();
+            string query = BaseSelect +
+                " WHERE o.order_date BETWEEN @start AND @end ORDER BY o.order_date DESC;";
+            try
+            {
+                using var conn = Database.GetConnection();
+                conn.Open();
+                using var cmd = new NpgsqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@start", startDate);
+                cmd.Parameters.AddWithValue("@end", endDate);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read()) orders.Add(MapReaderToOrder(reader));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[OrderRepository] GetByDateRange error: {ex.Message}");
+            }
+            return orders;
+        }
+
+        // ── Mapper ────────────────────────────────────────────────────────
         private static Order MapReaderToOrder(NpgsqlDataReader r) => new Order
         {
             OrderId = r.GetInt32(0),

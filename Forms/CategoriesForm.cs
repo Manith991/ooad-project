@@ -1,8 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.IO;
-using System.Windows.Forms;
-using OOAD_Project.Domain;
+﻿using OOAD_Project.Domain;
 using OOAD_Project.Patterns.Repository;
 using OOAD_Project.Patterns.Command;
 using OOAD_Project.Patterns.TemplateMethod;
