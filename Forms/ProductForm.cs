@@ -16,12 +16,11 @@ namespace OOAD_Project
 
         public ProductForm(string userRole) : base(userRole)
         {
-            InitializeComponent();
+            InitializeComponent();       // 1. Designer controls created
             this.dataGridView = dgvProduct;
-            this.btnAdd = btnAdd;
-
+            btnAdd.Click += OnAddClick;
             _repo = new ProductRepository();
-            InitializeForm();
+            InitializeForm();            // 3. SetupEventHandlers() runs — btnAdd is null!
         }
 
         // ── Abstract steps ────────────────────────────────────────────────

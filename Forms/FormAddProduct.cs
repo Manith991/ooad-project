@@ -158,58 +158,13 @@ namespace OOAD_Project
         // ── Save – COMMAND PATTERN ────────────────────────────────────────
         private void btnSave_Click(object sender, EventArgs e)
         {
-            // ── Validation ────────────────────────────────────────────────
-            if (string.IsNullOrWhiteSpace(txtProduct.Text))
-            {
-                MessageBox.Show("Enter a product name.");
-                return;
-            }
-            if (!decimal.TryParse(txtPrice.Text, out decimal price))
-            {
-                MessageBox.Show("Invalid price format.");
-                return;
-            }
-            if (cbCategory.SelectedValue == null)
-            {
-                MessageBox.Show("Please select a category.");
-                return;
-            }
+            if (string.IsNullOrWhiteSpace(txtProduct.Text)) { MessageBox.Show("Enter a product name."); return; }
+            if (!decimal.TryParse(txtPrice.Text, out decimal price)) { MessageBox.Show("Invalid price format."); return; }
+            if (cbCategory.SelectedValue == null) { MessageBox.Show("Please select a category."); return; }
 
-            // ── Build domain object ───────────────────────────────────────
-            var product = new Product
-            {
-                ProductId = _isEditMode ? _productId : 0,
-                ProductName = txtProduct.Text.Trim(),
-                Price = price,
-                CategoryId = Convert.ToInt32(cbCategory.SelectedValue),
-                ImagePath = _imagePath
-            };
-
-            try
-            {
-                ICommand cmd;
-
-                if (_isEditMode)
-                {
-                    // COMMAND PATTERN: encapsulate update with undo support
-                    cmd = new UpdateProductCommand(product, _productRepository);
-                }
-                else
-                {
-                    // COMMAND PATTERN: encapsulate add with undo support
-                    cmd = new ProductCommand(product, _productRepository);
-                }
-
-                _invoker.ExecuteCommand(cmd);
-
-                this.DialogResult = DialogResult.OK;
-                this.Close();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error saving product:\n" + ex.Message, "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            // removed _invoker.ExecuteCommand(cmd) — command is executed by the parent form
+            this.DialogResult = DialogResult.OK;
+            this.Close();
         }
 
         private void btnClose_Click(object sender, EventArgs e)

@@ -17,7 +17,7 @@ namespace OOAD_Project
             InitializeComponent();
 
             this.dataGridView = dgvTable;
-            this.btnAdd = btnAdd;
+            btnAdd.Click += OnAddClick;
 
             _repo = new TableRepository();
             InitializeForm();
