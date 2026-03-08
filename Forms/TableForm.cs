@@ -74,7 +74,7 @@ namespace OOAD_Project
         protected override void OnAddClick(object? sender, EventArgs e)
         {
             base.OnAddClick(sender, e); // access-denied guard for non-admins
-            if (userRole != "(admin)") return;
+            if (userRole != "admin") return;
 
             using var form = new FormAddTable();
             form.StartPosition = FormStartPosition.CenterParent;

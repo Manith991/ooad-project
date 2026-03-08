@@ -1,44 +1,92 @@
-﻿using System;
-using System.Windows.Forms;
-using OOAD_Project.Domain;
+﻿using OOAD_Project.Domain;
+using OOAD_Project.Patterns.Command;
 using OOAD_Project.Patterns.Repository;
+using System;
+using System.Windows.Forms;
 
 namespace OOAD_Project
 {
     /// <summary>
     /// RecordForm – uses:
     ///   REPOSITORY PATTERN : OrderRepository handles all DB access
-    ///
-    /// Note: Order deletion is NOT wrapped in the Command pattern deliberately.
-    /// Financial records should not be silently un-deleted to protect audit integrity.
+    ///   COMMAND PATTERN    : DeleteOrderCommand wraps deletion with undo/redo
     /// </summary>
     public partial class RecordForm : Form
     {
-        // ✅ REPOSITORY PATTERN
         private readonly OrderRepository _repo;
-
+        private readonly CommandInvoker _commandInvoker = new CommandInvoker();
         private readonly string currentRole;
+
+        // ── Undo / Redo toolbar ───────────────────────────────────────────
+        private ToolStrip _toolStrip = new ToolStrip();
+        private ToolStripButton _btnUndo = new ToolStripButton("↩ Undo") { Enabled = false };
+        private ToolStripButton _btnRedo = new ToolStripButton("↪ Redo") { Enabled = false };
 
         public RecordForm(string role)
         {
             InitializeComponent();
             currentRole = role;
 
-            // ✅ REPOSITORY PATTERN
             _repo = new OrderRepository();
 
             dgvRecord.Columns["colDelete"].Visible =
-                currentRole.Equals("(admin)", StringComparison.OrdinalIgnoreCase);
+                currentRole.Equals("admin", StringComparison.OrdinalIgnoreCase);
 
+            BuildUndoRedoToolbar();
             LoadRecords();
         }
 
-        // ─── Load ───────────────────────────────────────────────────────────
+        // ── Toolbar ───────────────────────────────────────────────────────
+        private void BuildUndoRedoToolbar()
+        {
+            // Only admins can delete, so only admins benefit from undo/redo
+            if (!currentRole.Equals("admin", StringComparison.OrdinalIgnoreCase)) return;
+
+            _btnUndo.Click += (_, __) => UndoLast();
+            _btnRedo.Click += (_, __) => RedoLast();
+
+            _toolStrip.Items.Add(_btnUndo);
+            _toolStrip.Items.Add(_btnRedo);
+
+            this.Controls.Add(_toolStrip);
+            _toolStrip.BringToFront();
+        }
+
+        private void RefreshUndoRedoButtons()
+        {
+            _btnUndo.Enabled = _commandInvoker.CanUndo;
+            _btnRedo.Enabled = _commandInvoker.CanRedo;
+            _btnUndo.Text = _commandInvoker.CanUndo
+                ? $"↩ Undo ({_commandInvoker.GetUndoDescription()})" : "↩ Undo";
+            _btnRedo.Text = _commandInvoker.CanRedo
+                ? $"↪ Redo ({_commandInvoker.GetRedoDescription()})" : "↪ Redo";
+        }
+
+        private void UndoLast()
+        {
+            try { _commandInvoker.Undo(); LoadRecords(); RefreshUndoRedoButtons(); }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Undo failed:\n" + ex.Message, "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void RedoLast()
+        {
+            try { _commandInvoker.Redo(); LoadRecords(); RefreshUndoRedoButtons(); }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Redo failed:\n" + ex.Message, "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // ── Load ──────────────────────────────────────────────────────────
         private void LoadRecords()
         {
             dgvRecord.Rows.Clear();
 
-            // ✅ REPOSITORY PATTERN: no inline SQL, single call
             var orders = _repo.GetAll();
             int i = 0;
 
@@ -60,11 +108,11 @@ namespace OOAD_Project
                 row.Cells["colDetail"].Value = Properties.Resources.detail;
                 row.Cells["colDelete"].Value = Properties.Resources.delete;
 
-                row.Tag = order.OrderId;   // ✅ store clean int, not boxed object
+                row.Tag = order.OrderId;
             }
         }
 
-        // ─── Cell click: Detail / Delete ────────────────────────────────────
+        // ── Cell click: Detail / Delete ───────────────────────────────────
         private void dgvRecord_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
@@ -89,7 +137,7 @@ namespace OOAD_Project
             }
             else if (colName == "colDelete")
             {
-                if (!currentRole.Equals("(admin)", StringComparison.OrdinalIgnoreCase))
+                if (!currentRole.Equals("admin", StringComparison.OrdinalIgnoreCase))
                 {
                     MessageBox.Show("Only admins can delete records.", "Access Denied",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -104,11 +152,11 @@ namespace OOAD_Project
 
                 try
                 {
-                    // ✅ REPOSITORY PATTERN: delete via repository
-                    _repo.Delete(orderId);
-                    MessageBox.Show("Order deleted successfully.", "Deleted",
+                    _commandInvoker.ExecuteCommand(new DeleteOrderCommand(orderId, _repo));
+                    MessageBox.Show("Order deleted. Use ↩ Undo to restore it if needed.", "Deleted",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadRecords();
+                    RefreshUndoRedoButtons();
                 }
                 catch (Exception ex)
                 {
@@ -118,7 +166,7 @@ namespace OOAD_Project
             }
         }
 
-        // ─── Helper ──────────────────────────────────────────────────────────
+        // ── Helper ────────────────────────────────────────────────────────
         private bool TryGetOrderId(DataGridViewRow row, out int orderId)
         {
             orderId = -1;

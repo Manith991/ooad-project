@@ -92,7 +92,7 @@ namespace OOAD_Project.Patterns.TemplateMethod
         /// <summary>Hide Edit/Delete columns and disable Add for non-admins.</summary>
         protected virtual void RestrictActionsByRole()
         {
-            if (userRole == "(admin)") return;
+            if (userRole == "admin") return;
 
             if (btnAdd != null) btnAdd.Enabled = false;
 
@@ -108,7 +108,7 @@ namespace OOAD_Project.Patterns.TemplateMethod
         /// <summary>Handle Add button – subclasses override to show their dialog.</summary>
         protected virtual void OnAddClick(object? sender, EventArgs e)
         {
-            if (userRole != "(admin)")
+            if (userRole != "admin")
             {
                 MessageBox.Show("Only admins can add items.", "Access Denied",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -127,7 +127,7 @@ namespace OOAD_Project.Patterns.TemplateMethod
             string colName = dataGridView.Columns[e.ColumnIndex].Name;
             if (colName != "colEdit" && colName != "colDelete") return;
 
-            if (userRole != "(admin)")
+            if (userRole != "admin")
             {
                 MessageBox.Show("Only admins can modify or delete items.", "Access Denied",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);

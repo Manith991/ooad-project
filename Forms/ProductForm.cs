@@ -84,7 +84,7 @@ namespace OOAD_Project
         protected override void OnAddClick(object? sender, EventArgs e)
         {
             base.OnAddClick(sender, e);
-            if (userRole != "(admin)") return;
+            if (userRole != "admin") return;
 
             using var form = new FormAddProduct();
             form.StartPosition = FormStartPosition.CenterParent;

@@ -13,6 +13,11 @@ namespace OOAD_Project
     {
         private readonly IRepository<User> _repo;
 
+        // ── Undo / Redo toolbar buttons (created in code so no designer change needed)
+        private ToolStrip _toolStrip = new ToolStrip();
+        private ToolStripButton _btnUndo = new ToolStripButton("↩ Undo") { Enabled = false };
+        private ToolStripButton _btnRedo = new ToolStripButton("↪ Redo") { Enabled = false };
+
         public StaffForm(string userRole) : base(userRole)
         {
             InitializeComponent();
@@ -20,7 +25,53 @@ namespace OOAD_Project
             this.btnAdd = btnAdd;
 
             _repo = new UserRepository();
+
+            BuildUndoRedoToolbar();
             InitializeForm();
+        }
+
+        // ── Build toolbar ─────────────────────────────────────────────────
+        private void BuildUndoRedoToolbar()
+        {
+            _btnUndo.Click += (_, __) => UndoLast();
+            _btnRedo.Click += (_, __) => RedoLast();
+
+            _toolStrip.Items.Add(_btnUndo);
+            _toolStrip.Items.Add(_btnRedo);
+
+            // Insert toolbar at the top of the form
+            this.Controls.Add(_toolStrip);
+            _toolStrip.BringToFront();
+        }
+
+        private void RefreshUndoRedoButtons()
+        {
+            _btnUndo.Enabled = commandInvoker.CanUndo;
+            _btnRedo.Enabled = commandInvoker.CanRedo;
+            _btnUndo.Text = commandInvoker.CanUndo
+                ? $"↩ Undo ({commandInvoker.GetUndoDescription()})" : "↩ Undo";
+            _btnRedo.Text = commandInvoker.CanRedo
+                ? $"↪ Redo ({commandInvoker.GetRedoDescription()})" : "↪ Redo";
+        }
+
+        private void UndoLast()
+        {
+            try { commandInvoker.Undo(); LoadData(); RefreshUndoRedoButtons(); }
+            catch (Exception ex) { MessageBox.Show("Undo failed:\n" + ex.Message, "Error"); }
+        }
+
+        private void RedoLast()
+        {
+            try { commandInvoker.Redo(); LoadData(); RefreshUndoRedoButtons(); }
+            catch (Exception ex) { MessageBox.Show("Redo failed:\n" + ex.Message, "Error"); }
+        }
+
+        // Helper: execute a command then refresh UI
+        private void RunCommand(ICommand cmd)
+        {
+            commandInvoker.ExecuteCommand(cmd);
+            LoadData();
+            RefreshUndoRedoButtons();
         }
 
         // ── Abstract steps ────────────────────────────────────────────────
@@ -64,13 +115,13 @@ namespace OOAD_Project
                 ImagePath = form.CurrentImagePath
             };
 
-            try { commandInvoker.ExecuteCommand(new UpdateStaffCommand(updated, _repo)); LoadData(); }
+            try { RunCommand(new UpdateStaffCommand(updated, _repo)); }
             catch (Exception ex) { MessageBox.Show("Error updating staff:\n" + ex.Message, "Error"); }
         }
 
         protected override void OnDelete(int id)
         {
-            try { commandInvoker.ExecuteCommand(new DeleteStaffCommand(id, _repo)); LoadData(); }
+            try { RunCommand(new DeleteStaffCommand(id, _repo)); }
             catch (Exception ex) { MessageBox.Show("Error deleting staff:\n" + ex.Message, "Error"); }
         }
 
@@ -84,7 +135,7 @@ namespace OOAD_Project
         private void DgvStaff_CellDoubleClick(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0 || dgvStaff.Columns[e.ColumnIndex].Name != "colImage") return;
-            if (userRole != "(admin)")
+            if (userRole != "admin")
             {
                 MessageBox.Show("Only admins can change staff images.", "Access Denied",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -105,7 +156,7 @@ namespace OOAD_Project
             if (user == null) return;
             user.ImagePath = Path.GetFileName(ofd.FileName);
 
-            try { commandInvoker.ExecuteCommand(new UpdateStaffCommand(user, _repo)); LoadData(); }
+            try { RunCommand(new UpdateStaffCommand(user, _repo)); }
             catch (Exception ex) { MessageBox.Show("Error updating image:\n" + ex.Message, "Error"); }
         }
     }

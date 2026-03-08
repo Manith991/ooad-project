@@ -83,7 +83,7 @@ namespace OOAD_Project
         protected override void OnAddClick(object? sender, EventArgs e)
         {
             base.OnAddClick(sender, e);
-            if (userRole != "(admin)") return;
+            if (userRole != "admin") return;
 
             using var form = new FormEditCate(0, "New Category");
             form.Text = "Add Category";
@@ -104,7 +104,7 @@ namespace OOAD_Project
         // ── CategoriesForm doesn't disable btnAdd for non-admins ──────────
         protected override void RestrictActionsByRole()
         {
-            if (userRole == "(admin)") return;
+            if (userRole == "admin") return;
             // only hide Edit/Delete columns; btnAdd stays enabled (shows access-denied on click)
             if (dgvCategory.Columns.Contains("colEdit")) dgvCategory.Columns["colEdit"].Visible = false;
             if (dgvCategory.Columns.Contains("colDelete")) dgvCategory.Columns["colDelete"].Visible = false;

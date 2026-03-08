@@ -218,7 +218,7 @@ namespace OOAD_Project
             // 
             cbRole.Font = new Font("Segoe UI", 13F);
             cbRole.FormattingEnabled = true;
-            cbRole.Items.AddRange(new object[] { "Admin", "Employee" });
+            cbRole.Items.AddRange(new object[] { "Admin", "Waiter" });
             cbRole.Location = new Point(22, 244);
             cbRole.Name = "cbRole";
             cbRole.Size = new Size(334, 44);

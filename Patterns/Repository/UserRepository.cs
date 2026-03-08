@@ -17,7 +17,7 @@ namespace OOAD_Project.Patterns.Repository
         public User? GetById(int id)
         {
             const string query =
-                "SELECT id, username, name, role, status, image " +
+                "SELECT id, username, name, email, role, status, image " +
                 "FROM users WHERE id = @id LIMIT 1;";
             try
             {
@@ -39,7 +39,7 @@ namespace OOAD_Project.Patterns.Repository
         {
             var users = new List<User>();
             const string query =
-                "SELECT id, username, name, role, status, image " +
+                "SELECT id, username, name, email, role, status, image " +
                 "FROM users ORDER BY id ASC;";
             try
             {
@@ -59,9 +59,9 @@ namespace OOAD_Project.Patterns.Repository
         public int Add(User entity)
         {
             const string query = @"
-                INSERT INTO users (username, name, role, status, image)
-                VALUES (@username, @name, @role, @status, @image)
-                RETURNING id;";
+        INSERT INTO users (username, name, email, role, status, image)
+        VALUES (@username, @name, @email, @role, @status, @image)
+        RETURNING id;";
             try
             {
                 using var conn = Database.GetConnection();
@@ -69,6 +69,7 @@ namespace OOAD_Project.Patterns.Repository
                 using var cmd = new NpgsqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@username", (object?)entity.Username ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@name", entity.Name);
+                cmd.Parameters.AddWithValue("@email", (object?)entity.Email ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@role", entity.Role);
                 cmd.Parameters.AddWithValue("@status", entity.Status ?? "Active");
                 cmd.Parameters.AddWithValue("@image", (object?)entity.Image ?? DBNull.Value);
@@ -153,7 +154,7 @@ namespace OOAD_Project.Patterns.Repository
         public User? GetByEmail(string email)
         {
             const string query =
-                "SELECT id, username, name, role, status, image " +
+                "SELECT id, username, name, email, role, status, image " +
                 "FROM users WHERE email = @email LIMIT 1;";
             try
             {
@@ -178,7 +179,7 @@ namespace OOAD_Project.Patterns.Repository
         public User? GetByCredentials(string username, string passwordHash)
         {
             const string query =
-                "SELECT id, username, name, role, status, image " +
+                "SELECT id, username, name, email, role, status, image " +
                 "FROM users WHERE username = @username AND password = @password LIMIT 1;";
             try
             {
@@ -204,7 +205,7 @@ namespace OOAD_Project.Patterns.Repository
         public User? GetByUsername(string username)
         {
             const string query =
-                "SELECT id, username, name, role, status, image " +
+                "SELECT id, username, name, email, role, status, image " +
                 "FROM users WHERE username = @username LIMIT 1;";
             try
             {
@@ -226,7 +227,7 @@ namespace OOAD_Project.Patterns.Repository
         {
             var users = new List<User>();
             const string query =
-                "SELECT id, username, name, role, status, image " +
+                "SELECT id, username, name, email, role, status, image " +
                 "FROM users WHERE role = @role ORDER BY id ASC;";
             try
             {
@@ -250,9 +251,10 @@ namespace OOAD_Project.Patterns.Repository
             Id = r.GetInt32(0),
             Username = r.IsDBNull(1) ? null : r.GetString(1),
             Name = r.GetString(2),
-            Role = r.GetString(3),
-            Status = r.IsDBNull(4) ? "Active" : r.GetString(4),
-            Image = r.IsDBNull(5) ? null : r.GetString(5)
+            Email = r.IsDBNull(3) ? string.Empty : r.GetString(3),
+            Role = r.GetString(4),
+            Status = r.IsDBNull(5) ? "Active" : r.GetString(5),
+            Image = r.IsDBNull(6) ? null : r.GetString(6)
         };
     }
 }

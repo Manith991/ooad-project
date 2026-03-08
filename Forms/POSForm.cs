@@ -2,6 +2,7 @@
 using OOAD_Project.Components;
 using OOAD_Project.Domain;
 using OOAD_Project.Patterns;
+using OOAD_Project.Patterns.Command;
 using OOAD_Project.Patterns.Repository;
 using System.Data;
 using System.Runtime.InteropServices;
@@ -42,10 +43,14 @@ namespace OOAD_Project
         private int? orderId;
         private readonly Form? parentForm;
 
+        // ✅ COMMAND PATTERN - Undo / Redo
+        private readonly CartCommandManager _cmdManager = new();
+        private readonly List<CartItem> _cart = new();
         public POSForm(Form? parent, string username, string orderType, string? tableName = null, int? tableId = null, int? orderId = null)
         {
             InitializeComponent();
             SetupDataGridView();
+
             AssignCategoryTags();
 
             parentForm = parent;
@@ -54,6 +59,9 @@ namespace OOAD_Project
             this.tableName = tableName;
             this.tableId = tableId;
             this.orderId = orderId;
+
+            this.KeyPreview = true;
+            this.KeyDown += POSForm_KeyDown;
 
             // ✅ Initialize Strategy Pattern
             _paymentContext = new PaymentContext();
@@ -259,7 +267,6 @@ namespace OOAD_Project
         {
             if (sender is not FoodCard card) return;
 
-            // ✅ Use ProductRepository instead of raw SQL
             var product = _productRepo.GetAll()
                 .FirstOrDefault(p => p.ProductName == card.Title);
 
@@ -270,7 +277,6 @@ namespace OOAD_Project
                 return;
             }
 
-            // ✅ DECORATOR PATTERN: Show category-specific customization dialog
             using var customDialog = new FormProductCustomization(
                 product.ProductId,
                 product.ProductName,
@@ -283,40 +289,23 @@ namespace OOAD_Project
             string itemName = customizedProduct.GetDescription();
             decimal itemPrice = customizedProduct.GetPrice();
 
-            // Ensure order exists in DB before adding items
             EnsureOrderExists();
 
-            DataGridViewRow? existingRow = dgvItems.Rows.Cast<DataGridViewRow>()
-                .FirstOrDefault(r => r.Cells["item"].Value?.ToString() == itemName);
-
-            if (existingRow != null)
+            // ✅ COMMAND PATTERN: wrap add in undoable command
+            var cartItem = new CartItem
             {
-                int qty = Convert.ToInt32(existingRow.Cells["quantity"].Value) + 1;
-                existingRow.Cells["quantity"].Value = qty;
-                existingRow.Cells["total"].Value = (double)(qty * itemPrice);
+                ProductId = product.ProductId,
+                ProductName = itemName,
+                Price = itemPrice,
+                Quantity = 1
+            };
 
-                // ✅ Repository: update order item
-                _orderItemRepo.Update(orderId!.Value, product.ProductId, qty, itemPrice);
-            }
-            else
-            {
-                int rowIdx = dgvItems.Rows.Add();
-                var newRow = dgvItems.Rows[rowIdx];
-                newRow.Cells["item"].Value = itemName;
-                newRow.Cells["price"].Value = (double)itemPrice;
-                newRow.Cells["quantity"].Value = 1;
-                newRow.Cells["total"].Value = (double)itemPrice;
-                newRow.Tag = product.ProductId; // ✅ Store productId on the row for deletion
+            _cmdManager.Execute(new AddCartItemCommand(_cart, cartItem));
+            RebuildGridFromCart();
 
-                // ✅ Repository: upsert order item
-                _orderItemRepo.Upsert(orderId!.Value, product.ProductId, 1, itemPrice);
-            }
-
-            UpdateRowNumbers();
+            // Sync new state to DB
+            SyncCartToDb();
             UpdateGrandTotal();
-
-            // ✅ Repository: refresh DB total
-            _orderItemRepo.RefreshOrderTotal(orderId!.Value);
         }
 
         private void dgvItems_CellEndEdit(object sender, DataGridViewCellEventArgs e)
@@ -324,20 +313,20 @@ namespace OOAD_Project
             if (dgvItems.Columns[e.ColumnIndex].Name != "quantity") return;
 
             var row = dgvItems.Rows[e.RowIndex];
-            if (double.TryParse(row.Cells["price"].Value?.ToString(), out double price) &&
-                int.TryParse(row.Cells["quantity"].Value?.ToString(), out int qty))
-            {
-                row.Cells["total"].Value = price * qty;
+            if (row.Tag is not int productId) return;
 
-                // ✅ Sync quantity change to DB
-                if (orderId.HasValue && row.Tag is int productId)
-                    _orderItemRepo.Update(orderId.Value, productId, qty, (decimal)price);
+            if (int.TryParse(row.Cells["quantity"].Value?.ToString(), out int newQty) && newQty > 0)
+            {
+                _cmdManager.Execute(new UpdateCartQuantityCommand(_cart, productId, newQty));
+                RebuildGridFromCart();
+                SyncCartToDb();
             }
             else
             {
-                row.Cells["quantity"].Value = 1;
-                row.Cells["total"].Value = price;
+                // Revert invalid input
+                RebuildGridFromCart();
             }
+
             UpdateGrandTotal();
         }
 
@@ -372,25 +361,21 @@ namespace OOAD_Project
 
             foreach (DataGridViewRow row in dgvItems.SelectedRows.Cast<DataGridViewRow>().ToList())
             {
-                // ✅ Delete from order_details in DB using stored productId
-                if (orderId.HasValue && row.Tag is int productId)
-                    DeleteOrderDetailFromDb(orderId.Value, productId);
-
-                dgvItems.Rows.Remove(row);
+                if (row.Tag is int productId)
+                {
+                    _cmdManager.Execute(new RemoveCartItemCommand(_cart, productId));
+                }
             }
 
+            RebuildGridFromCart();
+            SyncCartToDb();
             UpdateGrandTotal();
-            UpdateRowNumbers();
-
-            // ✅ Refresh DB total after removal
-            if (orderId.HasValue)
-                _orderItemRepo.RefreshOrderTotal(orderId.Value);
         }
 
         // ✅ FIX: Now clears all items from DB so they don't reappear on reopen
         private void btnClearAll_Click(object sender, EventArgs e)
         {
-            if (dgvItems.Rows.Count == 0)
+            if (_cart.Count == 0)
             {
                 MessageBox.Show("There are no items to clear.", "Empty List",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -401,16 +386,10 @@ namespace OOAD_Project
                 MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
                 return;
 
-            // ✅ Delete ALL order_details rows from DB for this order
-            if (orderId.HasValue)
-                DeleteAllOrderDetailsFromDb(orderId.Value);
-
-            dgvItems.Rows.Clear();
+            _cmdManager.Execute(new ClearCartCommand(_cart));
+            RebuildGridFromCart();
+            SyncCartToDb();
             UpdateGrandTotal();
-
-            // ✅ Refresh DB total (will be 0)
-            if (orderId.HasValue)
-                _orderItemRepo.RefreshOrderTotal(orderId.Value);
         }
 
         /// <summary>Deletes a single order_detail row from the database.</summary>
@@ -616,7 +595,7 @@ namespace OOAD_Project
 
         private void btnManageCategories_Click(object sender, EventArgs e)
         {
-            using var form = new CategoriesForm("(admin)");
+            using var form = new CategoriesForm("admin");
             if (form.ShowDialog() == DialogResult.OK)
                 RefreshCategoryButtons();
         }
@@ -643,26 +622,34 @@ namespace OOAD_Project
         #region Load Existing Order
 
         // ✅ Uses OrderItemRepository instead of raw SQL
+        #region Load Existing Order
+
         private void LoadExistingOrderDetails()
         {
             if (!orderId.HasValue) return;
 
             var items = _orderItemRepo.GetByOrderId(orderId.Value);
 
+            // ✅ Populate _cart so undo/redo works on existing orders too
+            _cart.Clear();
+            _cmdManager.Clear(); // fresh history — no undoing pre-loaded items
+
             foreach (var item in items)
             {
-                int index = dgvItems.Rows.Add();
-                var row = dgvItems.Rows[index];
-                row.Cells["item"].Value = item.ProductName;
-                row.Cells["quantity"].Value = item.Quantity;
-                row.Cells["price"].Value = (double)item.Price;
-                row.Cells["total"].Value = (double)item.Subtotal;
-                row.Tag = item.ProductId; // ✅ Store productId so Remove/Clear can delete from DB
+                _cart.Add(new CartItem
+                {
+                    ProductId = item.ProductId,
+                    ProductName = item.ProductName,
+                    Price = item.Price,
+                    Quantity = item.Quantity
+                });
             }
 
-            UpdateRowNumbers();
+            RebuildGridFromCart();
             UpdateGrandTotal();
         }
+
+        #endregion
 
         #endregion
 
@@ -725,5 +712,80 @@ namespace OOAD_Project
         }
 
         #endregion
+
+        private void POSForm_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control && e.KeyCode == Keys.Z)
+            {
+                if (!_cmdManager.CanUndo)
+                {
+                    MessageBox.Show("Nothing to undo.", "Undo",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    e.Handled = true;
+                    return;
+                }
+                _cmdManager.Undo();
+                RebuildGridFromCart();
+                SyncCartToDb();        // ✅ push restored cart back to DB
+                UpdateGrandTotal();
+                e.Handled = true;
+            }
+            else if (e.Control && (e.KeyCode == Keys.Y || (e.Shift && e.KeyCode == Keys.Z)))
+            {
+                if (!_cmdManager.CanRedo)
+                {
+                    MessageBox.Show("Nothing to redo.", "Redo",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    e.Handled = true;
+                    return;
+                }
+                _cmdManager.Redo();
+                RebuildGridFromCart();
+                SyncCartToDb();        // ✅ push re-applied cart back to DB
+                UpdateGrandTotal();
+                e.Handled = true;
+            }
+        }
+        /// <summary>Rebuilds the DataGridView entirely from the in-memory _cart list.</summary>
+        private void RebuildGridFromCart()
+        {
+            dgvItems.Rows.Clear();
+
+            foreach (var item in _cart)
+            {
+                int idx = dgvItems.Rows.Add();
+                var row = dgvItems.Rows[idx];
+                row.Cells["item"].Value = item.ProductName;
+                row.Cells["price"].Value = (double)item.Price;
+                row.Cells["quantity"].Value = item.Quantity;
+                row.Cells["total"].Value = (double)item.Subtotal;
+                row.Tag = item.ProductId;
+            }
+
+            UpdateRowNumbers();
+        }
+
+        /// <summary>
+        /// Pushes the current _cart state to the database (full replace of order_details).
+        /// </summary>
+        private void SyncCartToDb()
+        {
+            if (!orderId.HasValue) return;
+
+            try
+            {
+                // Clear existing DB rows for this order, then re-insert from _cart
+                DeleteAllOrderDetailsFromDb(orderId.Value);
+
+                foreach (var item in _cart)
+                    _orderItemRepo.Upsert(orderId.Value, item.ProductId, item.Quantity, item.Price);
+
+                _orderItemRepo.RefreshOrderTotal(orderId.Value);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[POSForm] SyncCartToDb error: {ex.Message}");
+            }
+        }
     }
 }
